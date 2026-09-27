@@ -40,7 +40,8 @@ description: "Task list for 002-database-migrations"
 **Independent Test**: quickstart §1, including the temporary broken migration
 
 - [X] T005 [US2] Write `src/test/java/com/wikigerminare/SchemaMigrationTest.java` (`@SpringBootTest` + Testcontainers). It asserts the catalog in data-model.md: 8 tables, enum `user_role` (`admin`,`member`) and `comment_status` (`OPEN`,`RESOLVED`), extension `pgcrypto`, the 4 `*_updated_at` triggers, the GIN index `idx_pages_full_text_search`, and `flyway_schema_history` latest version `1` with `success = true`
-- [ ] T006 [US2] Run quickstart §1 (full suite green; temporary `V999__broken.sql` fails the suite, then removed) and §2 (local run migrates); record the results in the PR
+- [X] T006 [US2] Run quickstart §1 (full suite green; temporary `V999__broken.sql` fails the suite, then removed) and §2 (local run migrates); record the results in the PR
+  - Results (2026-09-27): full suite green on postgres:18-alpine; a temporary `V999__broken.sql` made all `SchemaMigrationTest` cases error with `FlywayMigrateException`. Via `flyway-maven-plugin` on a local PG18: V1 applied; a V2 that creates a table and then fails left 0 tables and history `1:true` (atomic, FR-006); a re-run reported "up to date" in 5 s (FR-004, SC-002).
 
 **Checkpoint**: MVP: the schema is versioned, and every test uses it
 

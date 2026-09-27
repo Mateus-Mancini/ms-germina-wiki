@@ -142,7 +142,7 @@ description: "Task list for 001-backend-hosting"
 - [ ] T037 [P] Replace the placeholder `README.md` with a project overview, local run (`./mvnw spring-boot:test-run`), tests, and a link to `docs/deployment.md`
 - [ ] T038 Run the full quickstart (§1–§7) end to end and tick the results in the PR description
 - [ ] T039 Review cost after deploy: Billing shows USD 0.00, the budget exists, log retention is 7 days, and the only EventBridge schedule targets the guard function, never the API (FR-011, SC-002, quickstart §7)
-- [ ] T040 Add `scripts/smoke-lambda-package.sh`: unpack `target/wikigerminare-lambda.zip`, start a throwaway Postgres, invoke `StreamLambdaHandler` with a Function URL `GET /health` event and assert `200 ready`. Run it before every deploy (and in CI, feature 002). This closes the gap that let a missing runtime jar reach production (found during T017)
+- [X] T040 Add `scripts/smoke-lambda-package.sh`: unpack `target/wikigerminare-lambda.zip`, start a throwaway Postgres, invoke `StreamLambdaHandler` with a Function URL `GET /health` event and assert `200 ready`. Run it before every deploy (and in CI, feature 002). This closes the gap that let a missing runtime jar reach production (found during T017)
 
 ---
 

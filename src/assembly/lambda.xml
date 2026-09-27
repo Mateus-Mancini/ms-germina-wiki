@@ -19,8 +19,10 @@
 			<useProjectArtifact>false</useProjectArtifact>
 			<scope>runtime</scope>
 			<excludes>
-				<!-- The serverless adapter replaces the embedded servlet container -->
-				<exclude>org.apache.tomcat.embed:*</exclude>
+				<!-- The serverless adapter replaces the embedded servlet container. Keep tomcat-embed-el:
+				     it is the Jakarta EL implementation Hibernate Validator needs at startup. -->
+				<exclude>org.apache.tomcat.embed:tomcat-embed-core</exclude>
+				<exclude>org.apache.tomcat.embed:tomcat-embed-websocket</exclude>
 				<exclude>org.springframework.boot:spring-boot-tomcat</exclude>
 				<exclude>org.springframework.boot:spring-boot-starter-tomcat</exclude>
 				<exclude>org.springframework.boot:spring-boot-starter-tomcat-runtime</exclude>

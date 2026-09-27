@@ -1,0 +1,59 @@
+# PR checks (required on main) and the reusable check stage of release.yml.
+# Contract: specs/003-ci-cd/contracts/pipelines.md. No job here touches production.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SAM_CLI_TELEMETRY: 0
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Tests (unit, web, Testcontainers on PostgreSQL 18)
+        run: ./mvnw -B -ntp verify
+
+      - name: Usage guard tests
+        run: PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s infra/guard
+
+      - name: Package Lambda zip
+        run: ./mvnw -B -ntp -Plambda -DskipTests clean package
+
+      - name: Smoke test the packaged Lambda
+        run: scripts/smoke-lambda-package.sh
+
+      - name: Validate infrastructure templates
+        run: |
+          sam validate --lint --region sa-east-1
+          sam validate --lint --region sa-east-1 -t infra/github-oidc.yaml
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7

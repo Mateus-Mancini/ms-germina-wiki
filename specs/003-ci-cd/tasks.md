@@ -35,7 +35,7 @@ description: "Task list for 003-ci-cd"
 
 ## Phase 3: User Story 1 - Every PR is checked automatically (Priority: P1) 🎯 MVP
 
-- [ ] T005 [P] [US1] BE: Create `.github/workflows/ci.yml` (`pull_request`, `workflow_call`): job `build-test-package` (Temurin 21, Maven cache, Python 3.13, SAM CLI): `./mvnw -B verify`, guard tests, `clean package -Plambda`, `scripts/smoke-lambda-package.sh`, `sam validate --lint`. No secrets
+- [X] T005 [P] [US1] BE: Create `.github/workflows/ci.yml` (`pull_request`, `workflow_call`): job `build-test-package` (Temurin 21, Maven cache, Python 3.13, SAM CLI): `./mvnw -B verify`, guard tests, `clean package -Plambda`, `scripts/smoke-lambda-package.sh`, `sam validate --lint`. No secrets
 - [ ] T006 [US1] BE: Add job `rehearse-migrations` to `ci.yml`: runs only when `src/main/resources/db/migration/**` changed (paths filter via `git diff` against the base), environment `neon-rehearsal`, runs `scripts/db-migrate.sh rehearse` with `NEON_API_KEY`
 - [ ] T007 [P] [US1] FE: Read the Next.js 16 static-export guide in `node_modules/next/dist/docs/`, then set `output: "export"` and `images: { unoptimized: true }` in `next.config.ts` (only those two keys)
 - [ ] T008 [P] [US1] FE: Create `.github/workflows/ci.yml` (`pull_request`, `workflow_call`): job `lint-build` (Node 22): `npm ci`, `npm run lint`, `npm run build`, and assert `out/index.html` exists

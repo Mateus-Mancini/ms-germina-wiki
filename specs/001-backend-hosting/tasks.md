@@ -27,7 +27,7 @@ description: "Task list for 001-backend-hosting"
 
 - [X] T001 Add `com.amazonaws.serverless:aws-serverless-java-container-springboot4:3.0.2` and `org.crac:crac` dependencies in `pom.xml` (research R2, R3)
 - [X] T002 Add Boot-managed test dependencies `spring-boot-testcontainers` and Testcontainers PostgreSQL + JUnit Jupiter (no explicit versions) in `pom.xml` (research R14)
-- [ ] T003 Add Maven profile `lambda` in `pom.xml`: `maven-shade-plugin` producing `target/wikigerminare-lambda.jar`, with embedded Tomcat excluded (research R2)
+- [ ] T003 Add Maven profile `lambda` in `pom.xml` plus descriptor `src/assembly/lambda.xml`: `maven-assembly-plugin` producing `target/wikigerminare-lambda.zip` (classes at root, dependencies in `lib/`), with embedded Tomcat, Boot Tomcat modules and Lombok excluded (research R2)
 - [ ] T004 [P] Add a `.gitignore` entry for `.aws-sam/` and `samconfig.local.toml` in `.gitignore`
 
 ---
@@ -54,7 +54,7 @@ description: "Task list for 001-backend-hosting"
 - [ ] T010 Create `src/main/java/com/wikigerminare/lambda/StreamLambdaHandler.java`, a `RequestStreamHandler` with the Spring Boot 4 container handler initialised in a static block (research R2)
 - [ ] T011 Create base `template.yaml`:
   - parameters `DbUrl`, `DbUsername`, `DbPassword` (NoEcho), `WebAppOrigin`, `AlertEmail`
-  - `ApiFunction`: `java21`, `arm64`, 2048 MB, 20 s timeout, handler `StreamLambdaHandler`, `CodeUri: target/wikigerminare-lambda.jar`
+  - `ApiFunction`: `java21`, `arm64`, 2048 MB, 20 s timeout, handler `StreamLambdaHandler`, `CodeUri: target/wikigerminare-lambda.zip`
   - env vars `SPRING_DATASOURCE_*` and `SPRING_PROFILES_ACTIVE=lambda`
   - `AutoPublishAlias: live`, no VPC
   - `AWS::Logs::LogGroup` with `RetentionInDays: 7` (FR-005, FR-007, FR-008, FR-012)

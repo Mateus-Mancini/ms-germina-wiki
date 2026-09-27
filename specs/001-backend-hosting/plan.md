@@ -88,7 +88,7 @@ specs/001-backend-hosting/
 template.yaml                         # SAM: API function + alias/URL, guard, scheduler, SNS, budget, log groups
 samconfig.toml                        # non-secret deploy defaults (stack, region, capabilities)
 docs/deployment.md                    # FR-013: prerequisites, deploy, rollback, re-enable, config keys
-pom.xml                               # + adapter, org.crac, Testcontainers; `lambda` profile (shade, no Tomcat)
+pom.xml                               # + adapter, org.crac, Testcontainers; `lambda` profile (lib/ zip via assembly, no Tomcat)
 
 src/main/java/com/wikigerminare/
 ├── WikigerminareApplication.java

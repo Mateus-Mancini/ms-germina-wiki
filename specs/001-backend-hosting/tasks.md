@@ -90,7 +90,7 @@ description: "Task list for 001-backend-hosting"
 
 - [X] T018 [P] [US2] Write `src/test/java/com/wikigerminare/service/HealthServiceTest.java` (Mockito) covering three cases: the repository succeeds → `ready`; it throws → `not_ready`; it exceeds the timeout → `not_ready`
 - [X] T019 [P] [US2] Write `src/test/java/com/wikigerminare/controller/HealthControllerTest.java` (`@WebMvcTest`). It asserts 200 and 503, a body of exactly `{"status":"ready"}` or `{"status":"not_ready"}` (`status`: "`ready` or `not_ready`. There are no other fields."), `Cache-Control: no-store`, and no auth required
-- [ ] T020 [P] [US2] Write `src/test/java/com/wikigerminare/HealthIntegrationTest.java` (`@SpringBootTest` + Testcontainers). It expects 200 `ready` against a live container and 503 `not_ready` in under 10 s after the container is stopped
+- [X] T020 [P] [US2] Write `src/test/java/com/wikigerminare/HealthIntegrationTest.java` (`@SpringBootTest` + Testcontainers). It expects 200 `ready` against a live container and 503 `not_ready` in under 10 s after the container is stopped
 
 ### Implementation for User Story 2
 

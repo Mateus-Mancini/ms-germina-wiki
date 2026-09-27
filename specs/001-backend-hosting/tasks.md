@@ -41,7 +41,7 @@ description: "Task list for 001-backend-hosting"
 - [X] T005 Create `src/test/java/com/wikigerminare/TestcontainersConfiguration.java` exposing a `@ServiceConnection` `PostgreSQLContainer` bean
 - [X] T006 Update `src/test/java/com/wikigerminare/WikigerminareApplicationTests.java` to `@Import(TestcontainersConfiguration.class)` so `contextLoads` never needs the prod DB
 - [X] T007 [P] Create `src/test/java/com/wikigerminare/TestWikigerminareApplication.java` so `./mvnw spring-boot:test-run` starts the app with a throwaway Postgres
-- [ ] T008 Set common, Lambda-safe settings in `src/main/resources/application.properties`:
+- [X] T008 Set common, Lambda-safe settings in `src/main/resources/application.properties`:
   - `spring.jpa.open-in-view=false`
   - `spring.jpa.hibernate.ddl-auto=none`
   - explicit `PostgreSQLDialect`

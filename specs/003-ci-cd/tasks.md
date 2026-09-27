@@ -20,7 +20,7 @@ description: "Task list for 003-ci-cd"
 ## Phase 1: Setup
 
 - [X] T001 BE: Create `infra/github-oidc.yaml` (CloudFormation): GitHub OIDC provider, role `germinawiki-github-deploy` trusting only `repo:Mateus-Mancini/ms-germina-wiki:environment:production` (`aud` sts.amazonaws.com), least-privilege policy per research R2, output `RoleArn`
-- [ ] T002 BE: Change `scripts/db-migrate.sh rehearse` to take the role, password and database from `neonctl connection-string` of the rehearsal branch, so rehearsal needs only `NEON_API_KEY` or a local `neonctl` login, plus `NEON_PROJECT_ID` (research R4)
+- [X] T002 BE: Change `scripts/db-migrate.sh rehearse` to take the role, password and database from `neonctl connection-string` of the rehearsal branch, so rehearsal needs only `NEON_API_KEY` or a local `neonctl` login, plus `NEON_PROJECT_ID` (research R4)
 
 ---
 

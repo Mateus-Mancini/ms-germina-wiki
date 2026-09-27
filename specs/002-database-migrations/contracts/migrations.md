@@ -24,7 +24,7 @@ These are the team-facing interfaces of this feature: how a migration file must 
 |---|---|
 | `DB_URL` | Pooled JDBC URL. The script derives the direct URL by removing `-pooler` from the host |
 | `DB_USER`, `DB_PASS` | Database role credentials |
-| `NEON_PROJECT_ID` | Rehearsal branch creation (non-secret) |
+| `NEON_PROJECT_ID` | Rehearsal branch creation (non-secret). Since 003, `rehearse` needs only this plus Neon access (`neonctl auth` or `NEON_API_KEY`); it reads the branch's own credentials |
 
 For non-interactive use (CI, feature 003), `DB_MIGRATE_CONFIRM=yes` replaces the prompt in `production`. The branch guards still apply.
 

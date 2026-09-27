@@ -1,0 +1,15 @@
+# Non-secret deploy defaults for `sam deploy`. Only production exists.
+# Parameters are NOT set here: CLI --parameter-overrides replaces (not merges) this file's value,
+# so every deploy passes all of them explicitly (see docs/deployment.md).
+version = 0.1
+
+[default.global.parameters]
+stack_name = "ms-germina-wiki"
+region = "sa-east-1"
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true
+s3_prefix = "ms-germina-wiki"
+confirm_changeset = true
+fail_on_empty_changeset = false

@@ -26,7 +26,7 @@ description: "Task list for 003-ci-cd"
 
 ## Phase 2: Foundational (owner, one-time)
 
-- [ ] T003 BE: Write `docs/ci-cd.md` with the one-time setup as commands: deploy `infra/github-oidc.yaml`; create environments `production` (main-only) and `neon-rehearsal` (owner reviewer) with their secrets and variables via `gh`; Firebase `hosting:github` setup; required checks via `gh api` (contracts/pipelines.md)
+- [X] T003 BE: Write `docs/ci-cd.md` with the one-time setup as commands: deploy `infra/github-oidc.yaml`; create environments `production` (main-only) and `neon-rehearsal` (owner reviewer) with their secrets and variables via `gh`; Firebase `hosting:github` setup; required checks via `gh api` (contracts/pipelines.md)
 - [ ] T004 Owner runs the `docs/ci-cd.md` setup (AWS bootstrap stack, GitHub environments, secrets and variables, Firebase service account)
 
 **Checkpoint**: both repos have environments and secrets; the AWS deploy role exists

@@ -59,6 +59,7 @@ description: "Task list for 002-database-migrations"
   - `production` checks that it's on `main`, the tree is clean and `HEAD == origin/main`, shows `info`, and requires `yes` (or `DB_MIGRATE_CONFIRM=yes`)
   - secrets are never echoed
 - [ ] T008 [US1] Add `NEON_PROJECT_ID` to the owner's secrets file (owner action; documented in `docs/deployment.md` prerequisites)
+  - Project id is `rapid-surf-40273289` (org `org-wispy-paper-91429146`); the rehearsal (T009) passed it inline.
 - [X] T009 [US1] Rehearse V1 per quickstart §3 and record the output in the PR
   - Rehearsed 2026-09-27 on a disposable branch of Neon project `rapid-surf-40273289` (PG 18.6): V1 validated and applied in 0.8 s ("now at version v1"), branch deleted on exit, production untouched (still Empty Schema / V1 Pending).
 - [ ] T010 [US1] **After this feature is merged**: apply V1 to production from `main` per quickstart §4, re-run to prove idempotency (SC-002), and compare the production catalog with data-model.md (SC-001)
@@ -81,7 +82,8 @@ description: "Task list for 002-database-migrations"
 ## Phase 6: Polish
 
 - [X] T013 [P] Update `README.md` (layout, the migrations link) and `docs/deployment.md` (the `NEON_PROJECT_ID` prerequisite, running migrations before deploying code that needs them)
-- [ ] T014 Verify quickstart §6: the Lambda zip contains no Flyway, the smoke test passes, and the API's `/health` is unaffected (FR-008, SC-007)
+- [X] T014 Verify quickstart §6: the Lambda zip contains no Flyway, the smoke test passes, and the API's `/health` is unaffected (FR-008, SC-007)
+  - Verified 2026-09-27: 0 Flyway jars in the Lambda zip (clean build), smoke test `SMOKE OK`, all 7 test suites green. Found and fixed a stale `V999__broken.sql` in `target/classes` → all build commands now use `clean package`.
 
 ---
 

@@ -19,7 +19,7 @@ description: "Task list for 002-database-migrations"
 
 ## Phase 1: Setup
 
-- [ ] T001 Add `spring-boot-starter-flyway` and `org.flywaydb:flyway-database-postgresql` in **test** scope in `pom.xml` (research R3: never on the runtime classpath)
+- [X] T001 Add `spring-boot-starter-flyway` and `org.flywaydb:flyway-database-postgresql` in **test** scope in `pom.xml` (research R3: never on the runtime classpath)
 - [ ] T002 Add `flyway-maven-plugin` (Boot-managed version) in `pom.xml`, with plugin dependencies `flyway-database-postgresql` and the PostgreSQL driver, and fixed settings `cleanDisabled=true`, `outOfOrder=false`, `connectRetries=10` (contracts/migrations.md)
 - [ ] T003 [P] Switch the Testcontainers image to `postgres:18-alpine` in `src/test/java/com/wikigerminare/TestcontainersConfiguration.java`, `src/test/java/com/wikigerminare/HealthIntegrationTest.java`, `src/test/java/com/wikigerminare/lambda/SnapStartPrimingTest.java` and `scripts/smoke-lambda-package.sh` (FR-007)
 

@@ -1,0 +1,228 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GerminaWiki Pages API",
+    "version": "1.0.0",
+    "description": "REST CRUD for Wiki pages. Authentication is provided by the host infrastructure and is outside this contract. Page content is stored as raw Markdown."
+  },
+  "paths": {
+    "/api/pages": {
+      "post": {
+        "summary": "Create a page",
+        "description": "The creator UUID is obtained from the host-provided authenticated principal, not from the request body.",
+        "operationId": "createPage",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreatePageRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Page created",
+            "headers": {
+              "ETag": {
+                "description": "Strong page-specific entity tag for the created version.",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PageResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid title, content, UUID or request body" },
+          "404": { "description": "Referenced folder does not exist" },
+          "409": { "description": "Existing PostgreSQL integrity constraint prevents creation" }
+        }
+      },
+      "get": {
+        "summary": "List pages",
+        "operationId": "listPages",
+        "responses": {
+          "200": {
+            "description": "All pages; an empty result is an empty array",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PageResponse" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pages/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }
+      ],
+      "get": {
+        "summary": "Get a page by UUID",
+        "operationId": "getPage",
+        "responses": {
+          "200": {
+            "description": "Page found",
+            "headers": {
+              "ETag": {
+                "description": "Strong entity tag identifying this page representation version.",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PageResponse" }
+              }
+            }
+          },
+          "400": { "description": "The ID is not a valid UUID" },
+          "404": { "description": "Page not found" }
+        }
+      },
+      "patch": {
+        "summary": "Partially update title and/or Markdown content",
+        "description": "Requires exactly one strong page-specific If-Match entity tag. folderId is immutable. A stale precondition returns the current version after the write transaction rolls back.",
+        "operationId": "updatePage",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "description": "Exactly one strong ETag previously returned for this page. Weak tags, lists and wildcard are not accepted by this API.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdatePageRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Page updated; response includes the new numeric version",
+            "headers": {
+              "ETag": {
+                "description": "Strong entity tag for the new page version.",
+                "schema": { "type": "string" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PageResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid UUID, request body or unsupported/malformed If-Match value" },
+          "404": { "description": "Page not found" },
+          "412": {
+            "description": "The ETag is stale. No update was applied; current version and ETag are returned.",
+            "headers": {
+              "ETag": { "schema": { "type": "string" } }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StaleVersionError" }
+              }
+            }
+          },
+          "428": { "description": "If-Match is required for page updates" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a page",
+        "description": "Follows the delete actions configured in the existing PostgreSQL foreign keys; the API does not add cascades.",
+        "operationId": "deletePage",
+        "responses": {
+          "204": { "description": "Page deleted" },
+          "400": { "description": "The ID is not a valid UUID" },
+          "404": { "description": "Page not found" },
+          "409": { "description": "PostgreSQL rejected deletion due to an existing foreign-key constraint" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreatePageRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "content", "folderId"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "description": "Required non-blank title; maximum length follows the existing database column."
+          },
+          "content": {
+            "type": "string",
+            "description": "Required raw Markdown. Empty string is allowed; no rendering or normalization is performed."
+          },
+          "folderId": { "type": "string", "format": "uuid" }
+        }
+      },
+      "UpdatePageRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "description": "When supplied, replaces the title; maximum length follows the existing database column."
+          },
+          "content": {
+            "type": "string",
+            "description": "When supplied, replaces raw Markdown content; an empty string is allowed."
+          }
+        }
+      },
+      "PageResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "content",
+          "folderId",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "version"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "content": { "type": "string", "description": "Raw Markdown." },
+          "folderId": { "type": "string", "format": "uuid" },
+          "createdBy": { "type": "string", "format": "uuid" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "version": { "type": "integer", "description": "Current numeric database version; exact integer width follows the existing column." }
+        }
+      },
+      "StaleVersionError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error", "currentVersion"],
+        "properties": {
+          "error": { "type": "string" },
+          "currentVersion": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

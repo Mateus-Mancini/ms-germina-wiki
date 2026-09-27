@@ -1,0 +1,126 @@
+# Implementation Plan: pages-api
+
+**Branch**: `002-pages-api` (current feature branch) | **Date**: 2026-09-27 | **Spec**: [spec.md](spec.md)
+
+**Input**: Feature specification in `specs/002-pages-api/spec.md`
+
+## Summary
+
+Add REST CRUD for Wiki pages, storing Markdown unchanged and referencing the existing folders table by UUID. Map `version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0)` with JPA `@Version` and `Integer`, without manual increments or schema changes. Expose strong per-page ETags and require `If-Match` on PATCH; translate stale updates to `412` with the current version after rollback. The schema also requires a unique slug with no default, but the current `spec.md` omits slug; page creation is blocked until that contract gap is resolved without guessing a slug rule.
+
+## Technical Context
+
+**Language/Version**: Java 21
+
+**Primary Dependencies**: Existing Spring Boot 4.1.1, Spring Web MVC, Spring Data JPA, Springdoc OpenAPI and Bean Validation. No new production dependency is planned.
+
+**Storage**: Existing PostgreSQL `pages`, `folders`, and `users` tables as specified by the user. `spring.jpa.hibernate.ddl-auto=validate`; no DDL, migrations or generated schema. Verify the deployed schema matches the supplied definition before implementation.
+
+**Testing**: Existing JUnit and Spring Boot MVC/JPA test modules; unit/MVC tests plus PostgreSQL integration against a provisioned existing schema.
+
+**Target Platform**: JVM 21 server
+
+**Project Type**: Single Spring Boot REST backend
+
+**Performance Goals**: No numeric SLA or volume target is specified. List returns all pages as required.
+
+**Constraints**: Raw Markdown; immutable `folderId` after creation; exactly one strong page-specific `If-Match` on PATCH. Missing precondition returns `428`; stale version returns `412`. Principal UUID comes from the host. No auth or out-of-scope API changes.
+
+**Scale/Scope**: `pages-api` CRUD: create, get, list, update title/content, delete.
+
+## Constitution Check
+
+*Initial gate before research: PASS. Post-design gate recheck: PASS, subject to the schema and branch gates below.*
+
+- **Java and platform**: PASS. Java 21, Spring Boot, PostgreSQL, REST and DTOs follow the current Constitution.
+- **Layering**: PASS. Controller handles HTTP/ETag/principal; Service owns business rules and optimistic preconditions; Repository owns persistence.
+- **Contracts and validation**: PASS. OpenAPI defines DTOs, REST statuses, `If-Match`, `412` and `428`; existing Bean Validation is available.
+- **Automated tests**: PASS at design level. Unit, MVC and PostgreSQL integration coverage is planned for success, validation, Markdown, folder references and stale writes.
+- **Simplicity and scope**: PASS. Existing dependencies, `FolderRepository` and principal convention are reused. No schema changes or out-of-scope API work.
+- **Schema gate**: The supplied schema confirms `version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0)`. Map it as `Integer @Version`, let JPA manage updates, and verify the provider persists initial version `1` without manual increments. Verify the deployed schema and FK actions match the supplied definition; no DDL is authorized.
+- **Slug contract gate**: The supplied schema requires `slug VARCHAR(300) NOT NULL UNIQUE` and has no default, while `spec.md` deliberately does not include slug in the request, response, or behavior. Do not add slug to DTOs, derive it from title, or invent a conflict rule. Resolve the spec/schema mismatch before implementing page creation; no schema change is allowed by this feature.
+- **Folder deletion effect**: `folder_id` is nullable and `ON DELETE SET NULL`. Creation still requires an existing folder and the spec keeps `folderId` immutable; deleting the folder later can make the stored/returned page `folderId` null. The current spec/contract should be reconciled before implementation of that response case; do not block folder deletion or add application cascades.
+- **Database test gate**: PostgreSQL test/development environment with existing `pages`, `folders`, and `users` schema must be provisioned. No `DATABASE_URL` is available to this process and no `psql` client is installed; `.env` was not read.
+- **Branch gate**: Current branch is `002-pages-api`, satisfying the Constitution's feature-branch requirement for subsequent source changes.
+- **Constitution recordkeeping**: Normative Java 21 requirement matches the feature. Sync-impact/version/date metadata still describes the 2026-09-25 amendment; reconcile separately before integration. This plan does not edit the Constitution.
+
+## Design and Implementation Sequence
+
+1. Verify the deployed schema matches the supplied definition and inspect existing rows/default behavior read-only. Record the slug omission and nullable-folder response mismatch; resolve those contract points before the affected endpoint behavior is implemented. No DDL.
+2. Add `Page` and `PageRepository` under `com.wikigerminare.pages`, mapping exactly `id`, `title`, `slug`, `content`, `version`, `folder_id`, `created_by`, `updated_by`, `created_at`, and `updated_at`. Map `version` as `Integer @Version`; JPA alone advances it, and the insert must start at `1` while satisfying the positive check. Keep user identifiers as UUID scalars; do not add a User entity.
+3. Implement DTOs and transactional Service operations for create, get, list, update and delete after resolving the slug contract. Reuse `FolderRepository` for create-time folder existence, preserve Markdown, and obtain `created_by` from the existing principal at the controller boundary. Map `updated_by` as nullable but do not invent API semantics absent from `spec.md`.
+4. Add the page REST controller and feature-local exception handling. Derive strong ETags from page UUID/version; enforce a single strong `If-Match` on PATCH and map missing, invalid and stale preconditions to `428`, `400` and `412` respectively.
+5. Flush update work before returning its incremented version. For a provider-detected optimistic-lock race, allow rollback, then read the latest version in a new transaction and return `412` with its ETag/version.
+6. Add Service/MVC tests and PostgreSQL integration tests for the supplied schema, version seed/increment, FK behavior, Markdown round-trip and two concurrent updates using the same ETag. Verify page delete applies database CASCADE/SET NULL actions without API-side cascading; a `409` is only for an actual FK violation, not the listed dependent rows. Run against the existing-schema test database; add no DDL or test replacement schema.
+
+## Supplied Page Schema Mapping
+
+| Column | Schema fact | Plan consequence |
+|---|---|---|
+| `id` | UUID PK, `DEFAULT gen_random_uuid()` | Map UUID and preserve database default unless current ID generation convention requires an explicitly verified equivalent. |
+| `title` | `VARCHAR(255) NOT NULL` | Required, non-blank, maximum 255; do not use folders' 150-character limit. |
+| `slug` | `VARCHAR(300) NOT NULL UNIQUE`, no default | Required by storage but absent from `spec.md`; block create implementation until the spec defines its source/rule. Do not add contract behavior here. |
+| `content` | `TEXT NOT NULL DEFAULT ''` | Required, empty string allowed, no schema-defined maximum; preserve raw Markdown exactly. |
+| `version` | `INTEGER NOT NULL DEFAULT 1 CHECK (version > 0)` | Map `Integer @Version`; test insert starts at 1 and JPA increments updates. Never increment manually. |
+| `folder_id` | Nullable UUID FK to `folders(id) ON DELETE SET NULL` | Validate an existing folder on create per spec; no update of folder; represent database-set null if folder is deleted, subject to response contract clarification. |
+| `created_by` | UUID NOT NULL FK to `users(id) ON DELETE RESTRICT` | UUID from authenticated principal, never freely supplied by request. |
+| `updated_by` | Nullable UUID FK to `users(id) ON DELETE SET NULL` | Map nullable UUID scalar; `spec.md` defines no update/response semantics, so do not invent them. |
+| `created_at`, `updated_at` | TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP | Map to `Instant`; preserve schema/default behavior and update timestamp only on accepted changes. |
+
+**Inbound page references**: `page_images.page_id`, `comments.page_id`, `page_tags.page_id`, and `page_links.source_page_id` use `ON DELETE CASCADE`; `page_links.target_page_id` uses `ON DELETE SET NULL`. Do not reproduce these actions in application code. None of these supplied relationships is an expected page-delete `23503` scenario.
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+specs/002-pages-api/
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
+├── contracts/
+│   └── pages-api.openapi.json
+└── tasks.md                 # Created later by /speckit.tasks
+```
+
+### Source Code (repository root)
+
+```text
+src/main/java/com/wikigerminare/
+├── WikigerminareApplication.java
+├── folders/                         # Existing; reuse without modifying
+└── pages/
+    ├── Page.java
+    ├── PageRepository.java
+    ├── PageService.java
+    ├── PageController.java
+    ├── PageExceptionHandler.java
+    └── dto/
+        ├── CreatePageRequest.java
+        ├── UpdatePageRequest.java
+        └── PageResponse.java
+
+src/test/java/com/wikigerminare/
+├── WikigerminareApplicationTests.java
+└── pages/
+    ├── PageServiceTest.java
+    ├── PageControllerTest.java
+    └── PagePostgresIntegrationTest.java
+```
+
+**Structure Decision**: Keep the existing single Maven module and `com.wikigerminare` root package. Add a feature-local `pages` package with Controller -> Service -> Repository and DTOs. Reuse `FolderRepository` and the implemented `Principal.getName()` UUID convention. No shared page/API error abstraction exists to extend.
+
+## Risks and Boundaries
+
+- Confirm the deployed `version` column and JPA insert seed behavior match the supplied `INTEGER DEFAULT 1 CHECK (version > 0)`; otherwise optimistic locking cannot be implemented without resolving the incompatibility, and DDL is prohibited.
+- `slug` is required and unique in the supplied schema but absent from `spec.md`; without an agreed source/rule and no DB default, inserts cannot satisfy the schema. Do not invent slug semantics; page creation is blocked pending contract resolution.
+- `folder_id` can become null after its referenced folder is deleted. The current spec expects an existing folder and immutable assignment but does not explicitly describe this database-driven null in responses; reconcile before implementing that case without changing the existing contract unilaterally.
+- Any external writer that changes page content without advancing the same version can defeat lost-update protection; all page writers must follow the version discipline.
+- Optimistic-lock failures may occur at flush/commit and mark the transaction rollback-only. Current-version lookup must happen after rollback in a new transaction.
+- No PostgreSQL test service or page schema fixture exists locally. Integration and concurrent-write tests require a provisioned database with the supplied schema.
+- The current branch is `002-pages-api`; keep feature source changes on this branch.
+
+## Complexity Tracking
+
+No Constitution violations require justification. JPA `@Version` and HTTP conditional requests implement the explicit optimistic-locking requirement using existing mechanisms.

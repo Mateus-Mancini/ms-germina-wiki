@@ -37,8 +37,8 @@ description: "Task list for 003-ci-cd"
 
 - [X] T005 [P] [US1] BE: Create `.github/workflows/ci.yml` (`pull_request`, `workflow_call`): job `build-test-package` (Temurin 21, Maven cache, Python 3.13, SAM CLI): `./mvnw -B verify`, guard tests, `clean package -Plambda`, `scripts/smoke-lambda-package.sh`, `sam validate --lint`. No secrets
 - [X] T006 [US1] BE: Add job `rehearse-migrations` to `ci.yml`: runs only when `src/main/resources/db/migration/**` changed (paths filter via `git diff` against the base), environment `neon-rehearsal`, runs `scripts/db-migrate.sh rehearse` with `NEON_API_KEY`
-- [ ] T007 [P] [US1] FE: Read the Next.js 16 static-export guide in `node_modules/next/dist/docs/`, then set `output: "export"` and `images: { unoptimized: true }` in `next.config.ts` (only those two keys)
-- [ ] T008 [P] [US1] FE: Create `.github/workflows/ci.yml` (`pull_request`, `workflow_call`): job `lint-build` (Node 22): `npm ci`, `npm run lint`, `npm run build`, and assert `out/index.html` exists
+- [X] T007 [P] [US1] FE: Read the Next.js 16 static-export guide in `node_modules/next/dist/docs/`, then set `output: "export"` and `images: { unoptimized: true }` in `next.config.ts` (only those two keys)
+- [X] T008 [P] [US1] FE: Create `.github/workflows/ci.yml` (`pull_request`, `workflow_call`): job `lint-build` (Node 22): `npm ci`, `npm run lint`, `npm run build`, and assert `out/index.html` exists
 - [ ] T009 [US1] Owner makes `build-test-package` (BE) and `lint-build` (FE) required checks on `main` (command in `docs/ci-cd.md`); validate per quickstart §1
 
 ---
@@ -54,16 +54,16 @@ description: "Task list for 003-ci-cd"
 
 ## Phase 5: User Story 3 - Merging the web app publishes it (Priority: P2)
 
-- [ ] T012 [P] [US3] FE: Create `firebase.json` (`hosting.public: "out"`, `cleanUrls: true`, ignore patterns) and `.firebaserc` (default `germinawiki`)
-- [ ] T013 [US3] FE: Create `.github/workflows/release.yml` (`push` to `main`, `workflow_dispatch`): `checks` calls `ci.yml` → `deploy` (environment `production`, `concurrency: production`): build, then `FirebaseExtended/action-hosting-deploy@v0` with `channelId: live`, `projectId: germinawiki`
+- [X] T012 [P] [US3] FE: Create `firebase.json` (`hosting.public: "out"`, `cleanUrls: true`, ignore patterns) and `.firebaserc` (default `germinawiki`)
+- [X] T013 [US3] FE: Create `.github/workflows/release.yml` (`push` to `main`, `workflow_dispatch`): `checks` calls `ci.yml` → `deploy` (environment `production`, `concurrency: production`): build, then `FirebaseExtended/action-hosting-deploy@v0` with `channelId: live`, `projectId: germinawiki`
 - [ ] T014 [US3] Validate per quickstart §6 (`https://germinawiki.web.app` serves the build)
 
 ---
 
 ## Phase 6: Polish
 
-- [ ] T015 [P] BE: Update `README.md` (CI badge, pipelines section) and `docs/deployment.md` (releases are automatic on merge; manual deploy is the fallback); add a backward-compatible-migrations rule to `docs/database-migrations.md` (spec edge case: rollback restores code, not schema)
-- [ ] T016 [P] FE: Add a short "Deploy" section to the web app `README.md` pointing to the pipelines and `docs/ci-cd.md` in the backend repo
+- [X] T015 [P] BE: Update `README.md` (CI badge, pipelines section) and `docs/deployment.md` (releases are automatic on merge; manual deploy is the fallback); add a backward-compatible-migrations rule to `docs/database-migrations.md` (spec edge case: rollback restores code, not schema)
+- [X] T016 [P] FE: Add a short "Deploy" section to the web app `README.md` pointing to the pipelines and `docs/ci-cd.md` in the backend repo
 - [ ] T017 Validate quickstart §2 (gated rehearsal), §7 (credentials) and §8 (cost)
 
 ---

@@ -1,5 +1,7 @@
 # ms-germina-wiki
 
+[![ci](https://github.com/Mateus-Mancini/ms-germina-wiki/actions/workflows/ci.yml/badge.svg)](https://github.com/Mateus-Mancini/ms-germina-wiki/actions/workflows/ci.yml) [![release](https://github.com/Mateus-Mancini/ms-germina-wiki/actions/workflows/release.yml/badge.svg)](https://github.com/Mateus-Mancini/ms-germina-wiki/actions/workflows/release.yml)
+
 Backend API for **GerminaWiki**, a wiki where students of Germinare (Instituto J&F) document their experience at the school. It's built with Spec-Driven Development using [Spec Kit](https://github.com/github/spec-kit).
 
 **Stack:** Java 21 · Spring Boot 4 · PostgreSQL (Neon) · AWS Lambda (SnapStart) behind a Function URL, in `sa-east-1`.
@@ -14,6 +16,7 @@ The Spec Kit commands are installed for **GitHub Copilot** (`.github/skills/`, P
 |---|---|
 | [001-backend-hosting](specs/001-backend-hosting/) | Production hosting, `/health` readiness, cold-start and cost guards |
 | [002-database-migrations](specs/002-database-migrations/) | Versioned schema (Flyway), tests on the real schema, safe production migrations |
+| [003-ci-cd](specs/003-ci-cd/) | PR checks and automatic releases (migrations, deploy, rollback) for API and web app |
 
 ## Running locally
 
@@ -56,7 +59,7 @@ The schema is versioned with Flyway; tests and local runs are migrated automatic
 
 ## Deployment
 
-There is only production, and it's deployed by the account owner or by CI on merge. See [docs/deployment.md](docs/deployment.md).
+There is only production. **Every merge to `main` releases automatically**: checks, database migrations, deploy, health check, and rollback if unhealthy. See [docs/ci-cd.md](docs/ci-cd.md). Manual deploys ([docs/deployment.md](docs/deployment.md)) are the owner's fallback.
 
 ## Contributing
 

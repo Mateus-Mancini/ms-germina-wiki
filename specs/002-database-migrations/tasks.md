@@ -59,7 +59,8 @@ description: "Task list for 002-database-migrations"
   - `production` checks that it's on `main`, the tree is clean and `HEAD == origin/main`, shows `info`, and requires `yes` (or `DB_MIGRATE_CONFIRM=yes`)
   - secrets are never echoed
 - [ ] T008 [US1] Add `NEON_PROJECT_ID` to the owner's secrets file (owner action; documented in `docs/deployment.md` prerequisites)
-- [ ] T009 [US1] Rehearse V1 per quickstart §3 and record the output in the PR
+- [X] T009 [US1] Rehearse V1 per quickstart §3 and record the output in the PR
+  - Rehearsed 2026-09-27 on a disposable branch of Neon project `rapid-surf-40273289` (PG 18.6): V1 validated and applied in 0.8 s ("now at version v1"), branch deleted on exit, production untouched (still Empty Schema / V1 Pending).
 - [ ] T010 [US1] **After this feature is merged**: apply V1 to production from `main` per quickstart §4, re-run to prove idempotency (SC-002), and compare the production catalog with data-model.md (SC-001)
 
 **Checkpoint**: production is at schema version 1

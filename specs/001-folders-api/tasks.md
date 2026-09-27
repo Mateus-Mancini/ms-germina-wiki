@@ -15,14 +15,14 @@
 **Purpose**: Satisfy the required validation dependency and verify external database prerequisites.
 
 - [x] T001 [P] Add `spring-boot-starter-validation` to `pom.xml` so Jakarta Bean Validation constraints have a provider.
-- [ ] T002 [P] Verify the deployed `folders` and `users` column types, identifier/timestamp defaults, FK actions, and a valid test creator UUID; record verified details in `specs/001-folders-api/data-model.md` without adding or changing DDL.
+- [x] T002 [P] Verify the deployed `folders` and `users` column types, identifier/timestamp defaults, FK actions, and a valid test creator UUID; record verified details in `specs/001-folders-api/data-model.md` without adding or changing DDL.
 
 ## Phase 2: Foundational
 
 **Purpose**: Map the existing table and provide persistence required by every story.
 
-- [ ] T003 Map `Folder` in `src/main/java/com/wikigerminare/folders/Folder.java` to the verified existing schema: `id` is UUID primary key; `name` is required VARCHAR(150); `parent_folder_id` is a nullable FK to `folders.id`; `created_by` is a required UUID FK to `users`; `created_at` and `updated_at` are required TIMESTAMPTZ. Use no JPA delete cascade or orphan removal.
-- [ ] T004 Add the basic Spring Data CRUD repository for `Folder` in `src/main/java/com/wikigerminare/folders/FolderRepository.java`; do not add schema-generation or migration code.
+- [x] T003 Map `Folder` in `src/main/java/com/wikigerminare/folders/Folder.java` to the verified existing schema: `id` is UUID primary key; `name` is required VARCHAR(150); `parent_folder_id` is a nullable FK to `folders.id`; `created_by` is a required UUID FK to `users`; `created_at` and `updated_at` are required TIMESTAMPTZ. Use no JPA delete cascade or orphan removal.
+- [x] T004 Add the basic Spring Data CRUD repository for `Folder` in `src/main/java/com/wikigerminare/folders/FolderRepository.java`; do not add schema-generation or migration code.
 
 **Checkpoint**: The mapped entity and repository validate against the pre-existing PostgreSQL schema; the current branch is already `001-folders-api`.
 
@@ -34,16 +34,16 @@
 
 ### Tests for User Story 1
 
-- [ ] T005 [P] [US1] Add `FolderServiceTest` cases for creating root/child folders, resolving `createdBy` from the supplied principal UUID, rejecting a missing parent, and returning not-found for an absent folder in `src/test/java/com/wikigerminare/folders/FolderServiceTest.java`.
-- [ ] T006 [P] [US1] Add MVC tests for `POST /api/folders` and `GET /api/folders/{id}`, including `201`, `200`, `400`, `404`, request validation and principal propagation, in `src/test/java/com/wikigerminare/folders/FolderControllerTest.java`.
-- [ ] T007 [P] [US1] Add PostgreSQL-backed create/read mapping tests using a creator UUID that exists in the test `users` table in `src/test/java/com/wikigerminare/folders/FolderPostgresIntegrationTest.java`.
+- [x] T005 [P] [US1] Add `FolderServiceTest` cases for creating root/child folders, resolving `createdBy` from the supplied principal UUID, rejecting a missing parent, and returning not-found for an absent folder in `src/test/java/com/wikigerminare/folders/FolderServiceTest.java`.
+- [x] T006 [P] [US1] Add MVC tests for `POST /api/folders` and `GET /api/folders/{id}`, including `201`, `200`, `400`, `404`, request validation and principal propagation, in `src/test/java/com/wikigerminare/folders/FolderControllerTest.java`.
+- [x] T007 [P] [US1] Add PostgreSQL-backed create/read mapping tests using a creator UUID that exists in the test `users` table in `src/test/java/com/wikigerminare/folders/FolderPostgresIntegrationTest.java`.
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Create `CreateFolderRequest` and `FolderResponse` DTOs in `src/main/java/com/wikigerminare/folders/dto/CreateFolderRequest.java` and `src/main/java/com/wikigerminare/folders/dto/FolderResponse.java`, plus `FolderNotFoundException` in `src/main/java/com/wikigerminare/folders/FolderNotFoundException.java`; enforce `name` as required, non-blank, maximum 150 characters, and keep `createdBy` out of the request body.
-- [ ] T009 [US1] Implement transactional create and get-by-ID operations in `src/main/java/com/wikigerminare/folders/FolderService.java`; obtain the creator UUID from the caller's authenticated principal, validate the optional parent exists, and populate UUID/timestamps consistently with the verified schema.
-- [ ] T010 [P] [US1] Implement `POST /api/folders` and `GET /api/folders/{id}` using DTOs in `src/main/java/com/wikigerminare/folders/FolderController.java`; pass the principal UUID to the Service without implementing authentication.
-- [ ] T011 [P] [US1] Add feature-local translation for request validation failures to `400` and `FolderNotFoundException` to `404` in `src/main/java/com/wikigerminare/folders/FolderExceptionHandler.java`.
+- [x] T008 [US1] Create `CreateFolderRequest` and `FolderResponse` DTOs in `src/main/java/com/wikigerminare/folders/dto/CreateFolderRequest.java` and `src/main/java/com/wikigerminare/folders/dto/FolderResponse.java`, plus `FolderNotFoundException` in `src/main/java/com/wikigerminare/folders/FolderNotFoundException.java`; enforce `name` as required, non-blank, maximum 150 characters, and keep `createdBy` out of the request body.
+- [x] T009 [US1] Implement transactional create and get-by-ID operations in `src/main/java/com/wikigerminare/folders/FolderService.java`; obtain the creator UUID from the caller's authenticated principal, validate the optional parent exists, and populate UUID/timestamps consistently with the verified schema.
+- [x] T010 [P] [US1] Implement `POST /api/folders` and `GET /api/folders/{id}` using DTOs in `src/main/java/com/wikigerminare/folders/FolderController.java`; pass the principal UUID to the Service without implementing authentication.
+- [x] T011 [P] [US1] Add feature-local translation for request validation failures to `400` and `FolderNotFoundException` to `404` in `src/main/java/com/wikigerminare/folders/FolderExceptionHandler.java`.
 
 **Checkpoint**: US1 passes its service, MVC and PostgreSQL tests without requiring US2 or US3.
 
@@ -55,17 +55,17 @@
 
 ### Tests for User Story 2
 
-- [ ] T012 [P] [US2] Add Service tests for list, name-only update, parent update, omitted versus explicit-null fields, empty update rejection, missing parent, self-parenting, ancestor-cycle rejection, and no mutation on conflict in `src/test/java/com/wikigerminare/folders/FolderServiceTest.java`.
-- [ ] T013 [P] [US2] Add MVC tests for `GET /api/folders`, `PATCH /api/folders/{id}`, and `DELETE /api/folders/{id}`, covering `200`, `204`, `400`, `404`, and `409` responses in `src/test/java/com/wikigerminare/folders/FolderControllerTest.java`.
-- [ ] T014 [P] [US2] Add PostgreSQL integration tests for actual FK delete behavior and concurrent reparent attempts that must not persist a cycle in `src/test/java/com/wikigerminare/folders/FolderHierarchyIntegrationTest.java`.
+- [x] T012 [P] [US2] Add Service tests for list, name-only update, parent update, omitted versus explicit-null fields, empty update rejection, missing parent, self-parenting, ancestor-cycle rejection, and no mutation on conflict in `src/test/java/com/wikigerminare/folders/FolderServiceTest.java`.
+- [x] T013 [P] [US2] Add MVC tests for `GET /api/folders`, `PATCH /api/folders/{id}`, and `DELETE /api/folders/{id}`, covering `200`, `204`, `400`, `404`, and `409` responses in `src/test/java/com/wikigerminare/folders/FolderControllerTest.java`.
+- [x] T014 [P] [US2] Add PostgreSQL integration tests for actual FK delete behavior and concurrent reparent attempts that must not persist a cycle in `src/test/java/com/wikigerminare/folders/FolderHierarchyIntegrationTest.java`.
 
 ### Implementation for User Story 2
 
-- [ ] T015 [P] [US2] Create a presence-aware `UpdateFolderRequest` in `src/main/java/com/wikigerminare/folders/dto/UpdateFolderRequest.java`: supplied `name` must be non-blank and at most 150 characters; omitted properties remain unchanged; omitted `parentFolderId` differs from explicit null; at least one property is required.
-- [ ] T016 [P] [US2] Add a repository operation in `src/main/java/com/wikigerminare/folders/FolderRepository.java` that acquires the fixed PostgreSQL transaction-scoped advisory lock used by every parent-changing operation in this API.
-- [ ] T017 [US2] Implement list, partial update, and delete in `src/main/java/com/wikigerminare/folders/FolderService.java` and add `FolderConflictException` in `src/main/java/com/wikigerminare/folders/FolderConflictException.java`; for parent changes, acquire the lock before reading ancestry, reject self/descendant cycles, track visited UUIDs, and change `updated_at` only on successful updates.
-- [ ] T018 [US2] Implement `GET /api/folders`, `PATCH /api/folders/{id}`, and `DELETE /api/folders/{id}` in `src/main/java/com/wikigerminare/folders/FolderController.java`, preserving the specified status codes and DTO boundaries.
-- [ ] T019 [US2] Extend `src/main/java/com/wikigerminare/folders/FolderExceptionHandler.java` to translate hierarchy conflicts and PostgreSQL FK SQLSTATE `23503` on delete to `409 Conflict`, without treating every integrity exception as an FK conflict or adding API-owned cascades.
+- [x] T015 [P] [US2] Create a presence-aware `UpdateFolderRequest` in `src/main/java/com/wikigerminare/folders/dto/UpdateFolderRequest.java`: supplied `name` must be non-blank and at most 150 characters; omitted properties remain unchanged; omitted `parentFolderId` differs from explicit null; at least one property is required.
+- [x] T016 [P] [US2] Add a repository operation in `src/main/java/com/wikigerminare/folders/FolderRepository.java` that acquires the fixed PostgreSQL transaction-scoped advisory lock used by every parent-changing operation in this API.
+- [x] T017 [US2] Implement list, partial update, and delete in `src/main/java/com/wikigerminare/folders/FolderService.java` and add `FolderConflictException` in `src/main/java/com/wikigerminare/folders/FolderConflictException.java`; for parent changes, acquire the lock before reading ancestry, reject self/descendant cycles, track visited UUIDs, and change `updated_at` only on successful updates.
+- [x] T018 [US2] Implement `GET /api/folders`, `PATCH /api/folders/{id}`, and `DELETE /api/folders/{id}` in `src/main/java/com/wikigerminare/folders/FolderController.java`, preserving the specified status codes and DTO boundaries.
+- [x] T019 [US2] Extend `src/main/java/com/wikigerminare/folders/FolderExceptionHandler.java` to translate hierarchy conflicts and PostgreSQL FK SQLSTATE `23503` on delete to `409 Conflict`, without treating every integrity exception as an FK conflict or adding API-owned cascades.
 
 **Checkpoint**: US2 passes its tests with the real database FK actions and does not create a cycle under concurrent API reparenting.
 
@@ -77,22 +77,22 @@
 
 ### Tests for User Story 3
 
-- [ ] T020 [P] [US3] Add Service tests for multiple roots, nested descendants, leaf nodes, empty result and one occurrence per folder in `src/test/java/com/wikigerminare/folders/FolderServiceTest.java`.
-- [ ] T021 [P] [US3] Add MVC tests for `GET /api/folders/tree`, including the recursive `children` shape and empty-array response, in `src/test/java/com/wikigerminare/folders/FolderControllerTest.java`.
-- [ ] T022 [P] [US3] Add PostgreSQL integration coverage confirming the flat folder projection assembles correct parent-child relationships in `src/test/java/com/wikigerminare/folders/FolderHierarchyIntegrationTest.java`.
+- [x] T020 [P] [US3] Add Service tests for multiple roots, nested descendants, leaf nodes, empty result and one occurrence per folder in `src/test/java/com/wikigerminare/folders/FolderServiceTest.java`.
+- [x] T021 [P] [US3] Add MVC tests for `GET /api/folders/tree`, including the recursive `children` shape and empty-array response, in `src/test/java/com/wikigerminare/folders/FolderControllerTest.java`.
+- [x] T022 [P] [US3] Add PostgreSQL integration coverage confirming the flat folder projection assembles correct parent-child relationships in `src/test/java/com/wikigerminare/folders/FolderHierarchyIntegrationTest.java`.
 
 ### Implementation for User Story 3
 
-- [ ] T023 [US3] Add one flat repository projection containing folder response fields and parent UUID in `src/main/java/com/wikigerminare/folders/FolderRepository.java`; avoid per-node parent/child fetches.
-- [ ] T024 [US3] Add `FolderTreeNodeResponse` and assemble roots/children from the flat projection by UUID in `src/main/java/com/wikigerminare/folders/dto/FolderTreeNodeResponse.java` and `src/main/java/com/wikigerminare/folders/FolderService.java`; do not serialize JPA entities.
-- [ ] T025 [US3] Expose `GET /api/folders/tree` returning root DTO nodes in `src/main/java/com/wikigerminare/folders/FolderController.java`.
+- [x] T023 [US3] Add one flat repository projection containing folder response fields and parent UUID in `src/main/java/com/wikigerminare/folders/FolderRepository.java`; avoid per-node parent/child fetches.
+- [x] T024 [US3] Add `FolderTreeNodeResponse` and assemble roots/children from the flat projection by UUID in `src/main/java/com/wikigerminare/folders/dto/FolderTreeNodeResponse.java` and `src/main/java/com/wikigerminare/folders/FolderService.java`; do not serialize JPA entities.
+- [x] T025 [US3] Expose `GET /api/folders/tree` returning root DTO nodes in `src/main/java/com/wikigerminare/folders/FolderController.java`.
 
 **Checkpoint**: US3 returns the complete forest from one flat read and passes Service, MVC, and PostgreSQL integration tests.
 
 ## Phase 6: Polish and Cross-Cutting Validation
 
-- [ ] T026 Run the full Maven test suite and each scenario in `specs/001-folders-api/quickstart.md` against the provisioned PostgreSQL schema; record actual commands and outcomes in `specs/001-folders-api/quickstart.md`.
-- [ ] T027 Review the final change set against `specs/001-folders-api/plan.md` and `specs/001-folders-api/spec.md`; confirm `pom.xml`, the `folders` package and its tests are the only implementation paths changed, with no DDL/migration or out-of-scope API changes.
+- [x] T026 Run the full Maven test suite and each scenario in `specs/001-folders-api/quickstart.md` against the provisioned PostgreSQL schema; record actual commands and outcomes in `specs/001-folders-api/quickstart.md`.
+- [x] T027 Review the final change set against `specs/001-folders-api/plan.md` and `specs/001-folders-api/spec.md`; confirm `pom.xml`, the `folders` package and its tests are the only implementation paths changed, with no DDL/migration or out-of-scope API changes.
 
 ## Dependencies and Execution Order
 

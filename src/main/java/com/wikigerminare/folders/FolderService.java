@@ -5,9 +5,12 @@ import com.wikigerminare.folders.dto.FolderResponse;
 import com.wikigerminare.folders.dto.UpdateFolderRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.wikigerminare.folders.dto.FolderTreeNodeResponse;
 
-import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -64,6 +67,53 @@ public class FolderService {
                 .map(this::toResponse)
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+public List<FolderTreeNodeResponse> getTree() {
+
+    List<FolderTreeProjection> projections =
+            folderRepository.findAllForTree();
+
+    Map<UUID, FolderTreeNodeResponse> nodes = new HashMap<>();
+
+    for (FolderTreeProjection projection : projections) {
+
+        nodes.put(
+                projection.getId(),
+                new FolderTreeNodeResponse(
+                        projection.getId(),
+                        projection.getName(),
+                        projection.getParentFolderId(),
+                        projection.getCreatedBy(),
+                        projection.getCreatedAt(),
+                        projection.getUpdatedAt(),
+                        new ArrayList<>()
+                )
+        );
+    }
+
+    List<FolderTreeNodeResponse> roots = new ArrayList<>();
+
+    for (FolderTreeProjection projection : projections) {
+
+        FolderTreeNodeResponse node = nodes.get(projection.getId());
+
+        UUID parentId = projection.getParentFolderId();
+
+        if (parentId == null) {
+            roots.add(node);
+            continue;
+        }
+
+        FolderTreeNodeResponse parent = nodes.get(parentId);
+
+        if (parent != null) {
+            parent.children().add(node);
+        }
+    }
+
+    return roots;
+}
 
     @Transactional
     public FolderResponse update(UUID id, UpdateFolderRequest request) {

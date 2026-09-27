@@ -2,12 +2,15 @@ package com.wikigerminare.folders;
 
 import com.wikigerminare.folders.dto.CreateFolderRequest;
 import com.wikigerminare.folders.dto.FolderResponse;
+import com.wikigerminare.folders.dto.FolderTreeNodeResponse;
+import com.wikigerminare.folders.dto.UpdateFolderRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -39,5 +42,34 @@ public class FolderController {
             @PathVariable UUID id
     ) {
         return ResponseEntity.ok(folderService.getById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<FolderResponse>> list() {
+        return ResponseEntity.ok(folderService.list());
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<FolderResponse> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateFolderRequest request
+    ) {
+        return ResponseEntity.ok(
+                folderService.update(id, request)
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID id
+    ) {
+        folderService.delete(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/tree")
+    public ResponseEntity<List<FolderTreeNodeResponse>> getTree() {
+        return ResponseEntity.ok(folderService.getTree());
     }
 }

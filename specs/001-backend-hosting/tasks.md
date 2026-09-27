@@ -74,7 +74,7 @@ description: "Task list for 001-backend-hosting"
 - [ ] T014 [US1] Add stack outputs `ApiUrl` (alias `live` Function URL), `ApiFunctionName`, `LiveVersion` in `template.yaml`
 - [ ] T015 [P] [US1] Write `src/test/java/com/wikigerminare/config/LocalCorsConfigTest.java`: under profile `local`, a preflight from `http://localhost:3000` is allowed and one from `https://evil.example` is rejected
 - [ ] T016 [US1] Create `src/main/java/com/wikigerminare/config/LocalCorsConfig.java`, a `@Profile("local")` `WebMvcConfigurer` reading origins from `app.cors.allowed-origins` in `application-local.properties` (plan Complexity Tracking)
-- [ ] T017 [US1] First deploy (owner) per quickstart §2, then validate reachability and CORS per quickstart §3; record results in the PR description
+- [ ] T017 [US1] First deploy (owner) per quickstart §2, then apply the 1-day lifecycle rule to the SAM artifacts bucket and validate reachability and CORS per quickstart §3; record results in the PR description
 
 **Checkpoint**: US1 is live and verifiable with curl
 
@@ -112,7 +112,7 @@ description: "Task list for 001-backend-hosting"
 
 - [ ] T026 [US3] Enable `SnapStart: ApplyOn: PublishedVersions` on `ApiFunction` in `template.yaml` (research R3)
 - [ ] T027 [P] [US3] Write `src/test/java/com/wikigerminare/lambda/SnapStartPrimingTest.java`. It asserts that priming completes without opening any DB connection (Hikari active + idle connections = 0 after `beforeCheckpoint`)
-- [ ] T028 [US3] Create `src/main/java/com/wikigerminare/lambda/SnapStartPriming.java`, an `org.crac.Resource` registered in `StreamLambdaHandler` whose `beforeCheckpoint` sends one synthetic non-DB request through the container handler (DispatcherServlet, Jackson, error path) (research R3)
+- [ ] T028 [US3] Create `src/main/java/com/wikigerminare/lambda/SnapStartPriming.java`, an `org.crac.Resource` registered in `StreamLambdaHandler` whose `beforeCheckpoint` sends one synthetic request to an unmapped path (404 error path, never `/health`, which touches the DB) through the container handler, and serialises an in-memory `ReadinessStatus` with Jackson (research R3)
 - [ ] T029 [US3] Redeploy and measure per quickstart §4. Record `Restore Duration` and cold/warm timings in `specs/001-backend-hosting/quickstart.md` under a "Measured results" section, and adjust memory in `template.yaml` only if the data justifies it
 
 **Checkpoint**: SC-003 and SC-004 measured and met, or the deviation is documented for escalation (research R3, native image)
@@ -130,7 +130,7 @@ description: "Task list for 001-backend-hosting"
 - [ ] T032 [US4] Add `GuardFunction` in `template.yaml`: Python 3.13 inline, 128 MB, 7-day log group, IAM scoped to `cloudwatch:GetMetricStatistics`, `lambda:PutFunctionConcurrency` on `ApiFunction` only and `sns:Publish` on the topic. It computes month-to-date requests and GB-s and stops the API at ≥ 80%. It accepts `thresholdOverride` in the event for testing, and never calls `GetMetricData` (FR-015, research R7)
 - [ ] T033 [US4] Add an `AWS::Scheduler::Schedule` `rate(10 minutes)` targeting `GuardFunction`, with its execution role, in `template.yaml` (SC-008)
 - [ ] T034 [US4] Validate the burst cap and the shutoff per quickstart §6, including R7-a (reserved concurrency 0 is allowed) and R7-b (a redeploy doesn't clear it). If R7-a fails, implement the `AuthType: AWS_IAM` fallback in `GuardFunction` and update research.md
-- [ ] T035 [P] [US4] Write `docs/deployment.md` (FR-013): one-time account setup, prerequisites, deploy, rollback, re-enable after shutoff, runtime configuration keys, and the S3 artifacts-bucket 1-day lifecycle command (research R11)
+- [ ] T035 [P] [US4] Write `docs/deployment.md` (FR-013, FR-016): one-time account setup (IAM admin user with MFA, `aws login`, no access keys, no everyday root use, both USD 1 budgets), prerequisites, deploy, rollback, re-enable after shutoff, runtime configuration keys, and the S3 artifacts-bucket 1-day lifecycle command (research R11)
 - [ ] T036 [US4] Validate rollback per quickstart §5 (SC-006) and a from-scratch deploy following `docs/deployment.md` only (SC-005)
 
 **Checkpoint**: All four user stories are independently functional in production
@@ -141,7 +141,7 @@ description: "Task list for 001-backend-hosting"
 
 - [ ] T037 [P] Replace the placeholder `README.md` with a project overview, local run (`./mvnw spring-boot:test-run`), tests, and a link to `docs/deployment.md`
 - [ ] T038 Run the full quickstart (§1–§7) end to end and tick the results in the PR description
-- [ ] T039 Review cost after deploy: Billing shows USD 0.00, the budget exists, and log retention is 7 days (SC-002, quickstart §7)
+- [ ] T039 Review cost after deploy: Billing shows USD 0.00, the budget exists, log retention is 7 days, and the only EventBridge schedule targets the guard function, never the API (FR-011, SC-002, quickstart §7)
 
 ---
 

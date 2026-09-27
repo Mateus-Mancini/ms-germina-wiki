@@ -23,7 +23,7 @@ import com.zaxxer.hikari.HikariPoolMXBean;
 class SnapStartPrimingTest {
 
 	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(
-			DockerImageName.parse("postgres:17-alpine"));
+			DockerImageName.parse("postgres:18-alpine"));
 
 	private static SpringBootLambdaContainerHandler<HttpApiV2ProxyRequest, AwsProxyResponse> handler;
 

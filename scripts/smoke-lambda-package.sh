@@ -20,7 +20,7 @@ trap cleanup EXIT
 
 unzip -q "$zip" -d "$work/pkg"
 
-container="$(docker run -d --rm -e POSTGRES_PASSWORD=smoke -p 127.0.0.1::5432 postgres:17-alpine)"
+container="$(docker run -d --rm -e POSTGRES_PASSWORD=smoke -p 127.0.0.1::5432 postgres:18-alpine)"
 port="$(docker port "$container" 5432/tcp | head -1 | awk -F: '{print $NF}')"
 for _ in $(seq 1 30); do
 	docker exec "$container" psql -h 127.0.0.1 -U postgres -tAc 'SELECT 1' >/dev/null 2>&1 && break

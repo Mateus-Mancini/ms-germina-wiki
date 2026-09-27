@@ -1,0 +1,224 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GerminaWiki Folders API",
+    "version": "1.0.0",
+    "description": "REST API for folders. The hosting authentication layer supplies the authenticated principal; authentication endpoints and token formats are out of scope."
+  },
+  "paths": {
+    "/api/folders": {
+      "post": {
+        "summary": "Create a folder",
+        "description": "The creator UUID is taken from the authenticated principal and is not accepted in the request body.",
+        "operationId": "createFolder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateFolderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Folder created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FolderResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request body" },
+          "404": { "description": "The requested parent folder does not exist" },
+          "409": { "description": "A database integrity constraint prevents creation" }
+        }
+      },
+      "get": {
+        "summary": "List folders",
+        "operationId": "listFolders",
+        "responses": {
+          "200": {
+            "description": "All folders; pagination, filtering, and ordering are not part of this contract",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/FolderResponse" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/folders/tree": {
+      "get": {
+        "summary": "Get the complete folder forest",
+        "operationId": "getFolderTree",
+        "responses": {
+          "200": {
+            "description": "Root folders with nested children; an empty forest is an empty array",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/FolderTreeNode" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/folders/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }
+      ],
+      "get": {
+        "summary": "Get a folder by ID",
+        "operationId": "getFolder",
+        "responses": {
+          "200": {
+            "description": "Folder found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FolderResponse" }
+              }
+            }
+          },
+          "400": { "description": "The ID is not a valid UUID" },
+          "404": { "description": "Folder not found" }
+        }
+      },
+      "patch": {
+        "summary": "Partially update a folder",
+        "description": "Omitted properties remain unchanged. Explicit parentFolderId null makes the folder a root. At least one property must be supplied.",
+        "operationId": "updateFolder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateFolderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Folder updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FolderResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid UUID or request body" },
+          "404": { "description": "Folder or requested parent folder not found" },
+          "409": { "description": "Self-parenting, hierarchy cycle, or database integrity conflict" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a folder",
+        "description": "The operation follows the foreign-key actions configured in PostgreSQL; the API does not add cascades or reparent children.",
+        "operationId": "deleteFolder",
+        "responses": {
+          "204": { "description": "Folder deleted" },
+          "400": { "description": "The ID is not a valid UUID" },
+          "404": { "description": "Folder not found" },
+          "409": { "description": "PostgreSQL rejected deletion due to a foreign-key constraint" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateFolderRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150,
+            "pattern": "\\S",
+            "description": "Required, non-blank folder name; maximum 150 characters."
+          },
+          "parentFolderId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Optional existing parent UUID; null or omission creates a root folder."
+          }
+        }
+      },
+      "UpdateFolderRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150,
+            "pattern": "\\S",
+            "description": "When supplied, replaces the folder name; null is invalid."
+          },
+          "parentFolderId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "When omitted, keep the current parent. Null makes this folder a root."
+          }
+        }
+      },
+      "FolderResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "parentFolderId",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "maxLength": 150 },
+          "parentFolderId": { "type": ["string", "null"], "format": "uuid" },
+          "createdBy": { "type": "string", "format": "uuid" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "FolderTreeNode": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "parentFolderId",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "children"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string", "maxLength": 150 },
+          "parentFolderId": { "type": ["string", "null"], "format": "uuid" },
+          "createdBy": { "type": "string", "format": "uuid" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "children": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FolderTreeNode" }
+          }
+        }
+      }
+    }
+  }
+}

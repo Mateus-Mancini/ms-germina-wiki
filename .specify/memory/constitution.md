@@ -55,7 +55,7 @@ e complexidade sem necessidade clara MUST ser evitadas.
 ## Restrições técnicas e de negócio
 
 O GerminaWiki é uma API desenvolvida por estudantes para fornecer o backend de uma
-aplicação web no formato de Wiki sobre a escola. O backend MUST utilizar Kotlin, Spring
+aplicação web no formato de Wiki sobre a escola. O backend MUST utilizar Java 21, Spring
 Boot, PostgreSQL, APIs HTTP REST e DTOs para entrada e saída. Novas tecnologias ou
 bibliotecas MUST ser adicionadas somente quando necessárias para atender a um requisito
 ou resolver um problema técnico identificado.

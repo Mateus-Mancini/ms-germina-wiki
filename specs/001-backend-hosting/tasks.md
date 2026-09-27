@@ -28,7 +28,7 @@ description: "Task list for 001-backend-hosting"
 - [X] T001 Add `com.amazonaws.serverless:aws-serverless-java-container-springboot4:3.0.2` and `org.crac:crac` dependencies in `pom.xml` (research R2, R3)
 - [X] T002 Add Boot-managed test dependencies `spring-boot-testcontainers` and Testcontainers PostgreSQL + JUnit Jupiter (no explicit versions) in `pom.xml` (research R14)
 - [X] T003 Add Maven profile `lambda` in `pom.xml` plus descriptor `src/assembly/lambda.xml`: `maven-assembly-plugin` producing `target/wikigerminare-lambda.zip` (classes at root, dependencies in `lib/`), with embedded Tomcat, Boot Tomcat modules and Lombok excluded (research R2)
-- [ ] T004 [P] Add a `.gitignore` entry for `.aws-sam/` and `samconfig.local.toml` in `.gitignore`
+- [X] T004 [P] Add a `.gitignore` entry for `.aws-sam/` and `samconfig.local.toml` in `.gitignore`
 
 ---
 

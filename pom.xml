@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<aws-serverless-java-container.version>3.0.2</aws-serverless-java-container.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -42,6 +43,16 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>3.1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.amazonaws.serverless</groupId>
+			<artifactId>aws-serverless-java-container-springboot4</artifactId>
+			<version>${aws-serverless-java-container.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.crac</groupId>
+			<artifactId>crac</artifactId>
 		</dependency>
 
 		<dependency>

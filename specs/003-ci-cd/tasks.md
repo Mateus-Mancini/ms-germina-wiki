@@ -27,7 +27,8 @@ description: "Task list for 003-ci-cd"
 ## Phase 2: Foundational (owner, one-time)
 
 - [X] T003 BE: Write `docs/ci-cd.md` with the one-time setup as commands: deploy `infra/github-oidc.yaml`; create environments `production` (main-only) and `neon-rehearsal` (owner reviewer) with their secrets and variables via `gh`; Firebase `hosting:github` setup; required checks via `gh api` (contracts/pipelines.md)
-- [ ] T004 Owner runs the `docs/ci-cd.md` setup (AWS bootstrap stack, GitHub environments, secrets and variables, Firebase service account)
+- [X] T004 Owner runs the `docs/ci-cd.md` setup (AWS bootstrap stack, GitHub environments, secrets and variables, Firebase service account)
+  - Verified 2026-09-28: bootstrap stack `germinawiki-github-oidc` CREATE_COMPLETE (trust subject `repo:Mateus-Mancini/ms-germina-wiki:environment:production`); backend environments `production` (main-only; DB secrets; role, email and origin variables) and `neon-rehearsal` (owner reviewer; Neon key and project); web app environment `production` (main-only) holding the Hosting-only service-account key, with no repo-level secrets. Created manually (`firebase init hosting:github` couldn't access the repo).
 
 **Checkpoint**: both repos have environments and secrets; the AWS deploy role exists
 

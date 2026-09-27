@@ -8,11 +8,20 @@
 
 **Input**: User description: "Provision production hosting for the GerminaWiki backend API (task infra-hosting, backend part). The API must be publicly reachable over HTTPS by the web app, cost nothing to run for about a dozen users, expose a health check the web app calls on load to wake the backend and its database, and minimize the delay users feel on the first request after the system has been idle. There is only a production environment."
 
+## Clarifications
+
+### Session 2026-09-27
+
+- Q: Should the production API also accept browser calls from `http://localhost:3000` for local frontend development? → A: Yes. Allowed origins are the official web app origin plus `http://localhost:3000`.
+- Q: If traffic floods the public API past free limits, refuse requests or keep serving and pay? → A: Refuse. A hard cap on concurrently running requests (excess refused with "too many requests, try again") bounds bursts, plus an automatic shutoff that stops serving when monthly usage reaches 80% of the free limits, so cost can never leave the free tier.
+- Q: Who may deploy or roll back the backend by hand? → A: Only the account owner. Other team members deploy through the automated pipeline on merge (feature `infra-cicd`); the documented manual procedure keeps deploys reproducible.
+- Q: How many days should backend logs be kept before automatic deletion? → A: 7 days.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The web app reaches a live API in production (Priority: P1)
 
-A team member deploys the backend from the repository, and the GerminaWiki web app, served from its own public address, can call the API over a secure connection. Every other backend feature (auth, pages, folders, comments, images) is only usable by students once this exists.
+The account owner deploys the backend from the repository, and the GerminaWiki web app, served from its own public address, can call the API over a secure connection. Every other backend feature (auth, pages, folders, comments, images) is only usable by students once this exists.
 
 **Why this priority**: Without a reachable production API nothing else the team builds can be used or demonstrated.
 
@@ -21,7 +30,7 @@ A team member deploys the backend from the repository, and the GerminaWiki web a
 **Acceptance Scenarios**:
 
 1. **Given** the backend has been deployed, **When** the web app calls any public endpoint over HTTPS, **Then** it receives the endpoint's normal response.
-2. **Given** the backend has been deployed, **When** a browser page on any origin other than the official web app calls the API, **Then** the browser refuses to expose the response to that page.
+2. **Given** the backend has been deployed, **When** a browser page on any origin other than the official web app or `http://localhost:3000` calls the API, **Then** the browser refuses to expose the response to that page.
 3. **Given** a request is made over plain HTTP, **When** it reaches the API address, **Then** it is not served unencrypted.
 
 ---
@@ -59,7 +68,7 @@ A student opens GerminaWiki in the morning after nobody has used it for hours. T
 
 ### User Story 4 - The team can deploy, update and roll back safely at no cost (Priority: P2)
 
-A team member ships a new backend version by following one documented procedure from the repository, without hand-editing cloud settings. If the new version is broken, they can put the previous version back. At no point does running the backend generate a bill, and if usage ever approaches a paid tier, the team is warned before being charged.
+The account owner ships a new backend version by following one documented procedure from the repository, without hand-editing cloud settings. If the new version is broken, they can put the previous version back. Other team members don't deploy by hand; they ship through the automated pipeline on merge, delivered in a later feature. At no point does running the backend generate a bill, and if usage ever approaches a paid tier, the team is warned before being charged.
 
 **Why this priority**: Production is the only environment, so every deploy goes straight to students. A repeatable deploy with a rollback path and a cost guard is what makes that acceptable.
 
@@ -67,8 +76,8 @@ A team member ships a new backend version by following one documented procedure 
 
 **Acceptance Scenarios**:
 
-1. **Given** a clean checkout of the repository and the documented prerequisites, **When** a team member follows the deploy procedure, **Then** the backend is created or updated without any manual cloud-console step.
-2. **Given** a newly deployed version is faulty, **When** a team member follows the rollback procedure, **Then** the previous version serves traffic again.
+1. **Given** a clean checkout of the repository and the documented prerequisites, **When** the account owner follows the deploy procedure, **Then** the backend is created or updated without any manual cloud-console step.
+2. **Given** a newly deployed version is faulty, **When** the account owner follows the rollback procedure, **Then** the previous version serves traffic again.
 3. **Given** a normal month of use, **When** the billing period closes, **Then** the hosting charge is zero.
 4. **Given** spending is forecast or recorded above the alert threshold, **When** the threshold is crossed, **Then** the account owner is notified by email.
 
@@ -79,8 +88,9 @@ A team member ships a new backend version by following one documented procedure 
 - A new version fails to start after deploy: traffic must keep going to the last working version, or be restored to it by rollback, without a manual rebuild.
 - The database is waking up and takes several seconds: the readiness check reports ready once the database answers, as long as that's within its time limit, not an error.
 - The database is down for longer than the readiness time limit: the check reports "not ready" and the web app can offer a retry.
-- A burst of simultaneous first requests after idle (e.g., a class opening the app together) must all succeed, without failures caused by exhausted database connections.
+- A burst of simultaneous first requests after idle (e.g., a class opening the app together): requests within the concurrency cap (FR-014) must succeed without failures caused by exhausted database connections; requests above it receive "too many requests" and the web app retries.
 - Secrets (database credentials, storage keys) must never appear in the repository, in logs, or in readiness responses.
+- A traffic flood (abusive script or accidental loop) exceeds the concurrency cap: excess requests are refused with "too many requests" and the web app shows its retry state. Legitimate users may be degraded during the flood. If the flood persists until monthly usage reaches 80% of the free limits, the automatic shutoff stops the backend, and no charge is incurred.
 - A request body larger than the platform limit (e.g., an image sent directly to the API) is rejected with a clear error. Large files go directly to storage, handled in a later feature.
 
 ## Requirements *(mandatory)*
@@ -88,18 +98,21 @@ A team member ships a new backend version by following one documented procedure 
 ### Functional Requirements
 
 - **FR-001**: The backend MUST be publicly reachable at a stable HTTPS address that doesn't change between deploys.
-- **FR-002**: The backend MUST allow browser calls only from the official web app origin(s) and MUST reject cross-origin browser access from any other origin.
+- **FR-002**: The backend MUST allow browser calls only from the official web app origin and from `http://localhost:3000` (local frontend development, since there is no dev environment), and MUST reject cross-origin browser access from any other origin.
 - **FR-003**: The backend MUST expose an unauthenticated readiness check that returns "ready" only after confirming the database answers a query.
-- **FR-004**: The readiness check MUST return "not ready" within a bounded time when the database is unreachable, and MUST NOT expose internal details.
+- **FR-004**: The readiness check MUST return "not ready" within 10 seconds when the database is unreachable, and MUST NOT expose internal details.
 - **FR-005**: The backend MUST read all secrets and environment-specific settings (database connection, allowed origins) from its runtime configuration, never from files committed to the repository.
 - **FR-006**: The complete hosting setup MUST be described in version-controlled files, so that deploying it requires no manual console configuration beyond one-time account setup.
-- **FR-007**: Each deploy MUST produce an identifiable version, and the team MUST be able to route traffic back to the previous version.
+- **FR-007**: Each deploy MUST produce an identifiable version, and the account owner MUST be able to route traffic back to the previous version.
 - **FR-008**: The backend MUST run in the same geographic region as the database (South America – São Paulo).
 - **FR-009**: The hosting setup MUST stay within the providers' permanent free usage limits at the expected load, and MUST NOT include any component billed per hour regardless of usage.
 - **FR-010**: The account MUST have a spending alert that notifies the owner by email once actual or forecast monthly cost exceeds USD 1.
 - **FR-011**: The backend MUST NOT keep itself or the database artificially awake (no scheduled keep-alive traffic), so that idle periods consume no free-tier compute.
-- **FR-012**: Application logs MUST be kept long enough to diagnose recent incidents, and bounded in retention so storage stays within free limits.
+- **FR-012**: Application logs MUST be retained for 7 days and then deleted automatically, keeping log storage within free limits.
 - **FR-013**: The deploy and rollback procedures, prerequisites, and the required runtime configuration keys MUST be documented in the repository.
+- **FR-014**: The backend MUST cap the number of requests it processes at the same time. Requests above the cap MUST be refused immediately with a "too many requests, try again later" response.
+- **FR-015**: When the backend's usage in the current month reaches 80% of any free usage limit, the backend MUST automatically stop serving requests and notify the account owner by email. It MUST stay stopped until the account owner re-enables it through a documented procedure.
+- **FR-016**: Credentials able to deploy, roll back or re-enable the backend by hand MUST be held only by the account owner. Those credentials MUST be protected with multi-factor authentication, and the root account MUST NOT be used for day-to-day operations.
 
 ### Key Entities
 
@@ -111,13 +124,14 @@ A team member ships a new backend version by following one documented procedure 
 
 ### Measurable Outcomes
 
-- **SC-001**: The web app can call the production API from its official address, and 100% of calls from other browser origins are refused.
+- **SC-001**: The web app can call the production API from its official address and from `http://localhost:3000`, and 100% of calls from other browser origins are refused.
 - **SC-002**: Monthly hosting cost is USD 0.00 for at least the first three months of operation at the expected load (≤ 15 active users).
 - **SC-003**: After ≥ 30 minutes of idle, the first readiness check answers in under 3 seconds in at least 9 of 10 trials.
 - **SC-004**: When the system is warm, readiness checks answer in under 300 ms in at least 9 of 10 trials, measured from the São Paulo region.
-- **SC-005**: A team member who has never deployed the backend can complete a deploy by following the documentation alone in under 15 minutes, excluding one-time account setup.
+- **SC-005**: Following the documentation alone, a deploy from a clean checkout completes in under 15 minutes, excluding one-time account setup. Checked by the account owner on a fresh machine or clone.
 - **SC-006**: A rollback to the previous version takes under 5 minutes from decision to the previous version serving traffic.
 - **SC-007**: When the database is unreachable, the readiness check answers "not ready" in under 10 seconds in 100% of trials.
+- **SC-008**: Under a flood of requests, 100% of over-cap requests receive a "too many requests" response rather than a timeout. Once the usage threshold is reached, the backend stops serving within 15 minutes and the owner receives an email, so billed usage stays at zero.
 
 ## Assumptions
 

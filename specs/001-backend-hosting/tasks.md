@@ -71,7 +71,7 @@ description: "Task list for 001-backend-hosting"
 **Independent Test**: quickstart §3. Allowed origins get `Access-Control-Allow-Origin`, `https://evil.example` does not, and plain HTTP isn't served
 
 - [X] T013 [US1] Add `FunctionUrlConfig` to `ApiFunction` in `template.yaml`: `AuthType: NONE`, CORS `AllowOrigins: [!Ref WebAppOrigin, http://localhost:3000]`, methods GET/POST/PUT/PATCH/DELETE, headers `Authorization`, `Content-Type` (FR-001, FR-002, research R4, R5)
-- [ ] T014 [US1] Add stack outputs `ApiUrl` (alias `live` Function URL), `ApiFunctionName`, `LiveVersion` in `template.yaml`
+- [X] T014 [US1] Add stack outputs `ApiUrl` (alias `live` Function URL), `ApiFunctionName`, `LiveVersion` in `template.yaml`
 - [ ] T015 [P] [US1] Write `src/test/java/com/wikigerminare/config/LocalCorsConfigTest.java`: under profile `local`, a preflight from `http://localhost:3000` is allowed and one from `https://evil.example` is rejected
 - [ ] T016 [US1] Create `src/main/java/com/wikigerminare/config/LocalCorsConfig.java`, a `@Profile("local")` `WebMvcConfigurer` reading origins from `app.cors.allowed-origins` in `application-local.properties` (plan Complexity Tracking)
 - [ ] T017 [US1] First deploy (owner) per quickstart §2, then apply the 1-day lifecycle rule to the SAM artifacts bucket and validate reachability and CORS per quickstart §3; record results in the PR description

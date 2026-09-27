@@ -71,3 +71,13 @@ Resources:
           SPRING_DATASOURCE_USERNAME: !Ref DbUsername
           SPRING_DATASOURCE_PASSWORD: !Ref DbPassword
 
+Outputs:
+  ApiUrl:
+    Description: API base URL for the web app (Function URL of alias 'live'; stable across deploys)
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl
+  ApiFunctionName:
+    Description: Needed for rollback and re-enable commands
+    Value: !Ref ApiFunction
+  LiveVersion:
+    Description: Version currently behind the 'live' alias
+    Value: !Ref ApiFunction.Version

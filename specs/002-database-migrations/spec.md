@@ -8,6 +8,12 @@
 
 **Input**: User description: "Complete task infra-database: the production database is empty (the team's schema script was never applied) and there is no migration runner. Put the schema under version control as ordered, repeatable migrations, apply the initial schema to production safely, make every automated test run against the real schema, and give the team a documented way to evolve the schema. There is only a production environment."
 
+## Clarifications
+
+### Session 2026-09-27
+
+- Q: Must a migration be merged into `main` (after an approved PR) before it can be applied to production? → A: Yes. Only migrations already on `main` may be applied to production; rehearsals on a disposable copy may use any branch.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Production has the team's schema, applied safely (Priority: P1)
@@ -43,7 +49,7 @@ A developer runs the test suite, and every test that needs a database gets a thr
 
 ### User Story 3 - The team can evolve the schema safely (Priority: P2)
 
-A teammate who needs a schema change, e.g. a new column for their feature, adds a new migration file following a documented convention, sees it applied in tests, and the owner applies it to production the same way as V1. An applied migration can't be silently edited afterwards.
+A teammate who needs a schema change, e.g. a new column for their feature, adds a new migration file following a documented convention, sees it applied in tests, rehearses it on a disposable copy, and once it's merged into `main` the owner applies it to production the same way as V1. An applied migration can't be silently edited afterwards.
 
 **Why this priority**: The schema will change several times as the pending API features land. A clear, enforced convention prevents drift between teammates' machines, tests and production.
 
@@ -59,6 +65,7 @@ A teammate who needs a schema change, e.g. a new column for their feature, adds 
 
 ### Edge Cases
 
+- An attempt to apply migrations to production from a branch other than `main` is refused before anything is applied.
 - A migration fails halfway in production: the database must not be left with a half-applied migration, and the failure must be visible to the owner.
 - The production database is suspended when migrations run: the run waits for it to wake instead of failing immediately.
 - Two migrations with the same version number: the run is rejected before anything is applied.
@@ -77,7 +84,7 @@ A teammate who needs a schema change, e.g. a new column for their feature, adds 
 - **FR-006**: Each migration MUST be applied atomically: it either completes or leaves no partial changes.
 - **FR-007**: Every database-backed automated test MUST run against a throwaway database built from the migrations, using the same PostgreSQL major version as production (18).
 - **FR-008**: The API MUST NOT apply migrations at startup in production.
-- **FR-009**: Production migrations MUST be applied by an explicit, documented command, run only by the account owner (and later by the CI/CD pipeline), using the credentials already kept outside the repository.
+- **FR-009**: Production migrations MUST be applied by an explicit, documented command, run only by the account owner (and later by the CI/CD pipeline), using the credentials already kept outside the repository, and only from the `main` branch, i.e. from migrations that were merged through an approved pull request. Rehearsals on a disposable copy may use any branch.
 - **FR-010**: The owner MUST be able to rehearse pending migrations against a disposable copy of the production database before applying them to production, at no cost.
 - **FR-011**: The repository MUST document the migration naming convention, how to add, test and rehearse a migration, and how production application is requested and performed.
 - **FR-012**: The authorship of the original schema script MUST be preserved in the version history.

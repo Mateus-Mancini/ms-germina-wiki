@@ -27,15 +27,17 @@ migrate() { FLYWAY_URL="$1" FLYWAY_USER="$DB_USER" FLYWAY_PASSWORD="$DB_PASS" ./
 
 rehearse() {
 	require DB_URL DB_USER DB_PASS NEON_PROJECT_ID
-	local git_branch name expires host
+	local git_branch expires host
 	git_branch="$(git rev-parse --abbrev-ref HEAD | tr -c 'a-zA-Z0-9-' '-' | cut -c1-30)"
-	name="rehearse-${git_branch%-}-$(date -u +%Y%m%d%H%M%S)"
+	# Global (not local): the EXIT trap runs after this function returns.
+	REHEARSAL_BRANCH="rehearse-${git_branch%-}-$(date -u +%Y%m%d%H%M%S)"
+	local name="$REHEARSAL_BRANCH"
 	expires="$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)"
 
 	echo "Creating disposable Neon branch '$name' from the default (production) branch, expires $expires"
 	npx --yes neonctl branches create --project-id "$NEON_PROJECT_ID" --name "$name" --expires-at "$expires" \
 		--output json >/dev/null
-	trap 'echo "Deleting $name"; npx --yes neonctl branches delete "$name" --project-id "$NEON_PROJECT_ID" >/dev/null' EXIT
+	trap 'echo "Deleting $REHEARSAL_BRANCH"; npx --yes neonctl branches delete "$REHEARSAL_BRANCH" --project-id "$NEON_PROJECT_ID" >/dev/null' EXIT
 
 	host="$(npx --yes neonctl connection-string "$name" --project-id "$NEON_PROJECT_ID" --role-name "$DB_USER" 2>/dev/null |
 		python3 -c 'import sys, urllib.parse as u; print(u.urlparse(sys.stdin.read().strip()).hostname)')"

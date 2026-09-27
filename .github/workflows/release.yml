@@ -1,0 +1,125 @@
+# Production release on every merge to main: checks -> migrations -> deploy -> verify -> automatic rollback.
+# Contract: specs/003-ci-cd/contracts/pipelines.md. There is only production.
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      simulate_failed_verify:
+        description: "Rollback drill: verify a path that returns 404, which triggers the automatic rollback"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: sa-east-1
+      SAM_CLI_TELEMETRY: 0
+      FUNCTION: germinawiki-api
+      DB_URL: ${{ secrets.DB_URL }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: AWS credentials (OIDC, no stored keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: sa-east-1
+          role-session-name: github-release-${{ github.run_id }}
+
+      # Migrations first: if they fail, the job stops and the API is not deployed.
+      - name: Apply database migrations
+        env:
+          DB_MIGRATE_CONFIRM: "yes"
+        run: scripts/db-migrate.sh production
+
+      - name: Package and smoke test
+        run: |
+          ./mvnw -B -ntp -Plambda -DskipTests clean package
+          scripts/smoke-lambda-package.sh
+
+      - name: Record the live version (rollback target)
+        id: before
+        run: echo "version=$(aws lambda get-alias --function-name "$FUNCTION" --name live --query FunctionVersion --output text)" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        run: |
+          sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides \
+            DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" \
+            WebAppOrigin="${{ vars.WEB_APP_ORIGIN }}" AlertEmail="${{ vars.ALERT_EMAIL }}"
+
+      - name: Verify readiness
+        id: verify
+        env:
+          SIMULATE: ${{ inputs.simulate_failed_verify == true }}
+        run: |
+          api_url="$(aws cloudformation describe-stacks --stack-name ms-germina-wiki \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)"
+          path=health
+          [[ "$SIMULATE" == "true" ]] && path=__rollback-drill && echo "Rollback drill: verifying /$path"
+          echo "version=$(aws lambda get-alias --function-name "$FUNCTION" --name live --query FunctionVersion --output text)" >> "$GITHUB_OUTPUT"
+          for attempt in 1 2 3 4 5 6; do
+            code="$(curl -s -o body.json -w '%{http_code}' --max-time 15 "${api_url}${path}" || true)"
+            echo "attempt $attempt: HTTP $code $(head -c 200 body.json 2>/dev/null)"
+            if [[ "$code" == "200" ]] && grep -q '"ready"' body.json; then echo "status=ready" >> "$GITHUB_OUTPUT"; exit 0; fi
+            if [[ "$code" == "429" ]]; then echo "status=stopped" >> "$GITHUB_OUTPUT"; exit 1; fi
+            sleep 10
+          done
+          echo "status=unhealthy" >> "$GITHUB_OUTPUT"
+          exit 1
+
+      # Only for unhealthy deploys; a 429 means the cost guard stopped the API, which new code did not cause.
+      - name: Roll back to the previous version
+        if: failure() && steps.verify.outputs.status == 'unhealthy'
+        run: |
+          aws lambda update-alias --function-name "$FUNCTION" --name live \
+            --function-version "${{ steps.before.outputs.version }}" --query FunctionVersion --output text
+
+      - name: Release summary
+        if: always()
+        run: |
+          {
+            echo "### Release ${GITHUB_SHA::7}"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Previous live version | ${{ steps.before.outputs.version || 'n/a' }} |"
+            echo "| Deployed version | ${{ steps.verify.outputs.version || 'n/a' }} |"
+            echo "| Readiness | ${{ steps.verify.outputs.status || 'not reached' }} |"
+            if [[ "${{ steps.verify.outputs.status }}" == "unhealthy" ]]; then
+              echo "| Rollback | live -> ${{ steps.before.outputs.version }} |"
+            fi
+            if [[ "${{ steps.verify.outputs.status }}" == "stopped" ]]; then
+              echo "| Note | API stopped by the usage guard (429). See docs/deployment.md, re-enable. |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

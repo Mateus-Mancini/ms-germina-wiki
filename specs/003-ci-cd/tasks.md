@@ -45,7 +45,7 @@ description: "Task list for 003-ci-cd"
 
 ## Phase 4: User Story 2 - Merging the backend deploys it (Priority: P1)
 
-- [ ] T010 [US2] BE: Create `.github/workflows/release.yml` (`push` to `main`, `workflow_dispatch` with input `simulate_failed_verify`):
+- [X] T010 [US2] BE: Create `.github/workflows/release.yml` (`push` to `main`, `workflow_dispatch` with input `simulate_failed_verify`):
   - job `checks` calls `ci.yml`
   - job `release` (environment `production`, `concurrency: production`, `permissions: id-token: write, contents: read`) runs: OIDC credentials → `DB_MIGRATE_CONFIRM=yes scripts/db-migrate.sh production` → record `live` version → `sam deploy --no-confirm-changeset --no-fail-on-empty-changeset` → verify `/health` (6 × 10 s) → on failure other than 429, `update-alias` back and fail → job summary with both versions
 - [ ] T011 [US2] Validate per quickstart §3 (merge → healthy release) and §4 (rollback drill via `workflow_dispatch`)

@@ -53,7 +53,7 @@ description: "Task list for 002-database-migrations"
 
 **Independent Test**: quickstart §3–§4 plus the catalog comparison
 
-- [ ] T007 [US1] Create `scripts/db-migrate.sh` with the `rehearse`, `production` and `info` subcommands per contracts/migrations.md:
+- [X] T007 [US1] Create `scripts/db-migrate.sh` with the `rehearse`, `production` and `info` subcommands per contracts/migrations.md:
   - derive the direct URL by stripping `-pooler`
   - `rehearse` creates a Neon branch with `--expires-at now+1h`, runs `flyway info/migrate/info` against its direct endpoint, and deletes the branch on exit
   - `production` checks that it's on `main`, the tree is clean and `HEAD == origin/main`, shows `info`, and requires `yes` (or `DB_MIGRATE_CONFIRM=yes`)

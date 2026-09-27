@@ -126,7 +126,7 @@ description: "Task list for 001-backend-hosting"
 **Independent Test**: quickstart §5–§7: rollback, 429 under flood, simulated shutoff and email, budget present
 
 - [X] T030 [P] [US4] Add an `AWS::SNS::Topic` with an email subscription to `!Ref AlertEmail` in `template.yaml`
-- [ ] T031 [P] [US4] Add an `AWS::Budgets::Budget` `germinawiki-monthly` of USD 1 with ACTUAL > 100% and FORECASTED > 100% email notifications in `template.yaml` (FR-010, research R8)
+- [X] T031 [P] [US4] Add an `AWS::Budgets::Budget` `germinawiki-monthly` of USD 1 with ACTUAL > 100% and FORECASTED > 100% email notifications in `template.yaml` (FR-010, research R8)
 - [ ] T032 [US4] Add `GuardFunction` in `template.yaml`: Python 3.13 inline, 128 MB, 7-day log group, IAM scoped to `cloudwatch:GetMetricStatistics`, `lambda:PutFunctionConcurrency` on `ApiFunction` only and `sns:Publish` on the topic. It computes month-to-date requests and GB-s and stops the API at ≥ 80%. It accepts `thresholdOverride` in the event for testing, and never calls `GetMetricData` (FR-015, research R7)
 - [ ] T033 [US4] Add an `AWS::Scheduler::Schedule` `rate(10 minutes)` targeting `GuardFunction`, with its execution role, in `template.yaml` (SC-008)
 - [ ] T034 [US4] Validate the burst cap and the shutoff per quickstart §6, including R7-a (reserved concurrency 0 is allowed) and R7-b (a redeploy doesn't clear it). If R7-a fails, implement the `AuthType: AWS_IAM` fallback in `GuardFunction` and update research.md

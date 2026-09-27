@@ -74,7 +74,7 @@ description: "Task list for 001-backend-hosting"
 - [X] T014 [US1] Add stack outputs `ApiUrl` (alias `live` Function URL), `ApiFunctionName`, `LiveVersion` in `template.yaml`
 - [X] T015 [P] [US1] Write `src/test/java/com/wikigerminare/config/LocalCorsConfigTest.java`: under profile `local`, a preflight from `http://localhost:3000` is allowed and one from `https://evil.example` is rejected
 - [X] T016 [US1] Create `src/main/java/com/wikigerminare/config/LocalCorsConfig.java`, a `@Profile("local")` `WebMvcConfigurer` reading origins from `app.cors.allowed-origins` in `application-local.properties` (plan Complexity Tracking)
-- [ ] T017 [US1] First deploy (owner) per quickstart §2, then apply the 1-day lifecycle rule to the SAM artifacts bucket and validate reachability and CORS per quickstart §3; record results in the PR description
+- [X] T017 [US1] First deploy (owner) per quickstart §2, then apply the 1-day lifecycle rule to the SAM artifacts bucket and validate reachability and CORS per quickstart §3; record results in the PR description
 
 **Checkpoint**: US1 is live and verifiable with curl
 
@@ -98,7 +98,7 @@ description: "Task list for 001-backend-hosting"
 - [X] T022 [P] [US2] Create `src/main/java/com/wikigerminare/repository/HealthRepository.java`, which runs `SELECT 1` via `JdbcTemplate` with a 3 s query timeout (research R10, R13)
 - [X] T023 [US2] Create `src/main/java/com/wikigerminare/service/HealthService.java`, which maps a repository success to `ready` and any exception or timeout to `not_ready`, logging the cause at WARN without exposing it (FR-003, FR-004)
 - [X] T024 [US2] Create `src/main/java/com/wikigerminare/controller/HealthController.java`: `GET /health` returns 200 or 503 with `Cache-Control: no-store` (contracts/health.openapi.yaml)
-- [ ] T025 [US2] Run `./mvnw test`, confirm T018–T020 pass, and redeploy. Validate `/health` in production per quickstart §3 and SC-007
+- [X] T025 [US2] Run `./mvnw test`, confirm T018–T020 pass, and redeploy. Validate `/health` in production per quickstart §3 and SC-007
 
 **Checkpoint**: MVP complete. The web app can reach the API (US1) and knows when it's ready (US2)
 

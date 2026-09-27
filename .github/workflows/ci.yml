@@ -57,3 +57,44 @@ jobs:
           name: surefire-reports
           path: target/surefire-reports/
           retention-days: 7
+
+  migrations-changed:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        run: |
+          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- src/main/resources/db/migration | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Rehearses new/changed migrations on a disposable Neon branch of production (deleted afterwards).
+  # The Neon API key can manage production data, so the environment requires the owner's approval
+  # before this job (and the secret) runs; PRs from forks never receive it.
+  rehearse-migrations:
+    needs: [build-test-package, migrations-changed]
+    if: needs.migrations-changed.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: neon-rehearsal
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Rehearse migrations on a Neon branch
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+        run: scripts/db-migrate.sh rehearse

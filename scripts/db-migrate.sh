@@ -28,7 +28,7 @@ migrate() { FLYWAY_URL="$1" FLYWAY_USER="$DB_USER" FLYWAY_PASSWORD="$DB_PASS" ./
 rehearse() {
 	require NEON_PROJECT_ID
 	local git_branch expires cs
-	git_branch="$(git rev-parse --abbrev-ref HEAD | tr -c 'a-zA-Z0-9-' '-' | cut -c1-30)"
+	git_branch="$(echo "${GITHUB_HEAD_REF:-$(git rev-parse --abbrev-ref HEAD)}" | tr -c 'a-zA-Z0-9-' '-' | cut -c1-30)"
 	# Global (not local): the EXIT trap runs after this function returns.
 	REHEARSAL_BRANCH="rehearse-${git_branch%-}-$(date -u +%Y%m%d%H%M%S)"
 	expires="$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)"

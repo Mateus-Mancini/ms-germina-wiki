@@ -31,7 +31,7 @@ The `local` profile allows CORS from `http://localhost:3000` for the web app.
 ./mvnw test                                    # all JVM tests (unit, @WebMvcTest, Testcontainers)
 ./mvnw test -Dtest=HealthServiceTest           # one class
 ./mvnw test -Dtest=HealthServiceTest#reportsReadyWhenDatabaseAnswers   # one method
-python3 -m unittest discover -s infra/guard    # usage-guard Lambda
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s infra/guard   # usage-guard Lambda
 ```
 
 ## Project layout

@@ -1,4 +1,4 @@
-"""Unit tests for the usage guard (no AWS calls). Run: python3 -m unittest discover -s infra/guard"""
+"""Unit tests for the usage guard (no AWS calls). Run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s infra/guard"""
 import os
 import sys
 import types

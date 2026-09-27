@@ -56,7 +56,7 @@ Changing any parameter publishes a new version (`AutoPublishAliasAllProperties`)
 ```bash
 source ~/.config/germinawiki/prod.env
 ./mvnw test                                  # unit, web and Testcontainers tests (never touch Neon)
-python3 -m unittest discover -s infra/guard  # usage guard tests
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s infra/guard  # guard tests; no __pycache__ in the package
 ./mvnw -Plambda -DskipTests package          # target/wikigerminare-lambda.zip (reproducible)
 scripts/smoke-lambda-package.sh              # runs the packaged zip against a throwaway Postgres
 sam deploy --parameter-overrides DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" \

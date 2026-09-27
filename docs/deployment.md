@@ -33,6 +33,7 @@ There is also an account-wide `account-safety-net` budget (USD 1), created by ha
    export DB_USER='...' DB_PASS='...'
    export WEB_APP_ORIGIN='https://germinawiki.web.app'
    export ALERT_EMAIL='...'
+   export NEON_PROJECT_ID='...'   # non-secret; for migration rehearsals (npx neonctl projects list)
    ```
 
 **Tools:** JDK 21, Docker, AWS CLI v2, AWS SAM CLI.
@@ -53,11 +54,17 @@ Changing any parameter publishes a new version (`AutoPublishAliasAllProperties`)
 
 ## Deploy
 
+If the release depends on new migrations, apply them **first**, from `main` (see [database-migrations.md](database-migrations.md)):
+```bash
+scripts/db-migrate.sh production
+```
+
+Then deploy the API:
 ```bash
 source ~/.config/germinawiki/prod.env
 ./mvnw test                                  # unit, web and Testcontainers tests (never touch Neon)
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s infra/guard  # guard tests; no __pycache__ in the package
-./mvnw -Plambda -DskipTests package          # target/wikigerminare-lambda.zip (reproducible)
+./mvnw -Plambda -DskipTests clean package          # target/wikigerminare-lambda.zip (reproducible)
 scripts/smoke-lambda-package.sh              # runs the packaged zip against a throwaway Postgres
 sam deploy --parameter-overrides DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" \
   WebAppOrigin="$WEB_APP_ORIGIN" AlertEmail="$ALERT_EMAIL"

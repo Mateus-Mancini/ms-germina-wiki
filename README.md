@@ -13,6 +13,7 @@ The Spec Kit commands are installed for **GitHub Copilot** (`.github/skills/`, P
 | Feature | Status |
 |---|---|
 | [001-backend-hosting](specs/001-backend-hosting/) | Production hosting, `/health` readiness, cold-start and cost guards |
+| [002-database-migrations](specs/002-database-migrations/) | Versioned schema (Flyway), tests on the real schema, safe production migrations |
 
 ## Running locally
 
@@ -41,11 +42,17 @@ src/main/java/com/wikigerminare/
 ├── controller/  service/  repository/  dto/   # Controller → Service → Repository (constitution II)
 ├── config/                                    # Spring configuration
 └── lambda/                                    # Lambda entry point + SnapStart priming (AWS only)
+src/main/resources/db/migration/               # Flyway migrations (V1 = team schema); see docs/database-migrations.md
 template.yaml, samconfig.toml                  # production infrastructure (AWS SAM)
 infra/guard/                                   # usage guard: stops the API near free-tier limits
 scripts/smoke-lambda-package.sh                # pre-deploy smoke test of the Lambda zip
+scripts/db-migrate.sh                          # rehearse | production | info (database migrations)
 docs/deployment.md                             # deploy, rollback, re-enable
 ```
+
+## Database
+
+The schema is versioned with Flyway; tests and local runs are migrated automatically. To change the schema, follow [docs/database-migrations.md](docs/database-migrations.md).
 
 ## Deployment
 

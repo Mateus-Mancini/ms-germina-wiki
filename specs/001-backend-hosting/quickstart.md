@@ -33,7 +33,7 @@ Stop the Postgres container (`docker stop <id>`) and call `/health` again. Expec
 ## 2. Deploy (US4, SC-005: time this, target < 15 min)
 
 ```bash
-./mvnw -Plambda -DskipTests package
+./mvnw -Plambda -DskipTests clean package
 source ~/.config/germinawiki/prod.env
 sam deploy --parameter-overrides DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" \
   WebAppOrigin="$WEB_APP_ORIGIN" AlertEmail="$ALERT_EMAIL"

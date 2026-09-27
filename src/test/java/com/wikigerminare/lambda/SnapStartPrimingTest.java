@@ -23,7 +23,7 @@ import com.zaxxer.hikari.HikariPoolMXBean;
 class SnapStartPrimingTest {
 
 	private static final PostgreSQLContainer postgres = new PostgreSQLContainer(
-			DockerImageName.parse("postgres:17-alpine"));
+			DockerImageName.parse("postgres:18-alpine"));
 
 	private static SpringBootLambdaContainerHandler<HttpApiV2ProxyRequest, AwsProxyResponse> handler;
 
@@ -33,6 +33,8 @@ class SnapStartPrimingTest {
 		System.setProperty("spring.datasource.url", postgres.getJdbcUrl());
 		System.setProperty("spring.datasource.username", postgres.getUsername());
 		System.setProperty("spring.datasource.password", postgres.getPassword());
+		// Mirror the Lambda runtime, which has no Flyway (migrations run outside the API).
+		System.setProperty("spring.flyway.enabled", "false");
 		handler = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(WikigerminareApplication.class);
 	}
 
@@ -41,6 +43,7 @@ class SnapStartPrimingTest {
 		System.clearProperty("spring.datasource.url");
 		System.clearProperty("spring.datasource.username");
 		System.clearProperty("spring.datasource.password");
+		System.clearProperty("spring.flyway.enabled");
 		postgres.stop();
 	}
 

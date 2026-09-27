@@ -95,7 +95,7 @@ description: "Task list for 001-backend-hosting"
 ### Implementation for User Story 2
 
 - [X] T021 [P] [US2] Create `src/main/java/com/wikigerminare/dto/ReadinessStatus.java`, a record with a single field `status` serialised as `ready` / `not_ready` (data-model.md)
-- [ ] T022 [P] [US2] Create `src/main/java/com/wikigerminare/repository/HealthRepository.java`, which runs `SELECT 1` via `JdbcTemplate` with a 3 s query timeout (research R10, R13)
+- [X] T022 [P] [US2] Create `src/main/java/com/wikigerminare/repository/HealthRepository.java`, which runs `SELECT 1` via `JdbcTemplate` with a 3 s query timeout (research R10, R13)
 - [ ] T023 [US2] Create `src/main/java/com/wikigerminare/service/HealthService.java`, which maps a repository success to `ready` and any exception or timeout to `not_ready`, logging the cause at WARN without exposing it (FR-003, FR-004)
 - [ ] T024 [US2] Create `src/main/java/com/wikigerminare/controller/HealthController.java`: `GET /health` returns 200 or 503 with `Cache-Control: no-store` (contracts/health.openapi.yaml)
 - [ ] T025 [US2] Run `./mvnw test`, confirm T018–T020 pass, and redeploy. Validate `/health` in production per quickstart §3 and SC-007

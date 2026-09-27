@@ -86,6 +86,8 @@ specs/001-backend-hosting/
 
 ```text
 template.yaml                         # SAM: API function + alias/URL, guard, scheduler, SNS, budget, log groups
+infra/guard/                          # usage-guard Lambda (guard.py) + stdlib unit tests (test_guard.py)
+scripts/smoke-lambda-package.sh       # pre-deploy smoke test of the packaged zip (T040)
 samconfig.toml                        # non-secret deploy defaults (stack, region, capabilities)
 docs/deployment.md                    # FR-013: prerequisites, deploy, rollback, re-enable, config keys
 pom.xml                               # + adapter, org.crac, Testcontainers; `lambda` profile (lib/ zip via assembly, no Tomcat)
@@ -121,5 +123,5 @@ src/test/java/com/wikigerminare/
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| Guard function written in Python (inline in `template.yaml`), not Java | FR-015/SC-008 need a scheduled ~40-line ops script that reads metrics and sets concurrency. Inline code keeps it in the one version-controlled template, with no build step and a ~100 ms cold start at 128 MB. | A Java/Spring guard needs a second Maven module or artifact, a heavier cold start, and more GB-s per run. AWS Budgets actions lag 8–24 h and can't change Lambda concurrency. It isn't part of the API, so the Java/Spring constraint (which covers the backend API) isn't weakened. |
+| Guard function written in Python (`infra/guard/`), not Java | FR-015/SC-008 need a scheduled ~60-line ops script that reads metrics and sets concurrency. Python needs no build step, starts in ~100 ms at 128 MB, and is unit-tested with the standard library (`python3 -m unittest`). | A Java/Spring guard needs a second Maven module or artifact, a heavier cold start, and more GB-s per run. AWS Budgets actions lag 8–24 h and can't change Lambda concurrency. It isn't part of the API, so the Java/Spring constraint (which covers the backend API) isn't weakened. |
 | Two CORS mechanisms (Function URL in prod, Spring `@Profile("local")`) | Function URL CORS answers preflights without invoking Lambda (free, no cold start). Local runs have no Function URL. | Spring-only CORS makes every preflight a billed invocation that can trigger a cold start. Function-URL-only CORS breaks local frontend development. |

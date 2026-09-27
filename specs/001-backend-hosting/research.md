@@ -58,7 +58,7 @@ Each entry records a decision, why it was made, and what else was considered. Al
 
 ## R7. Automatic shutoff (FR-015, SC-008)
 
-- **Decision**: a small **guard function**, Python 3.13 inline code in the SAM template, 128 MB, triggered **every 10 minutes by EventBridge Scheduler**. On each run it:
+- **Decision**: a small **guard function**, Python 3.13 in `infra/guard/guard.py` (packaged by SAM from that folder, with unit tests alongside), 128 MB, triggered **every 10 minutes by EventBridge Scheduler**. On each run it:
   1. reads month-to-date `AWS/Lambda` `Invocations` (account aggregate) and `Duration` per function via **`GetMetricStatistics`** (daily periods from the 1st of the month)
   2. computes requests and GB-s against the 1M / 400,000 limits
   3. at ≥ 80% of either limit, calls `PutFunctionConcurrency(ReservedConcurrentExecutions=0)` on the API function and publishes to an **SNS topic** with an email subscription.
@@ -69,7 +69,7 @@ Each entry records a decision, why it was made, and what else was considered. Al
   - `GetMetricStatistics` is covered by CloudWatch's 1M free API requests. **`GetMetricData` is not**: it's billed per metric requested, so it's deliberately avoided.
   - A 10-minute schedule meets the 15-minute bound in SC-008.
   - A concurrency of 0 makes the Function URL return 429 without invoking anything.
-  - Python inline code avoids a second Maven module and a Java cold start for a 40-line ops script (see Complexity Tracking in `plan.md`).
+  - Python avoids a second Maven module and a Java cold start for a ~60-line ops script (see Complexity Tracking in `plan.md`). It lives in its own file rather than inline in the template so it can be unit-tested (constitution IV).
 - **To verify during implementation**:
   - (a) Setting reserved concurrency to **0** is allowed under the 10-quota rule. It leaves unreserved concurrency at 10, the account minimum. **Fallback**: switch the alias Function URL to `AuthType: AWS_IAM`, which makes public calls get 403 without invoking.
   - (b) A later `sam deploy` doesn't silently clear the shutoff, since `ReservedConcurrentExecutions` isn't declared in the template. The quickstart has a check for this.

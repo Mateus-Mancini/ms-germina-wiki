@@ -114,6 +114,7 @@ description: "Task list for 001-backend-hosting"
 - [X] T027 [P] [US3] Write `src/test/java/com/wikigerminare/lambda/SnapStartPrimingTest.java`. It asserts that priming completes without opening any DB connection (Hikari active + idle connections = 0 after `beforeCheckpoint`)
 - [X] T028 [US3] Create `src/main/java/com/wikigerminare/lambda/SnapStartPriming.java`, an `org.crac.Resource` registered in `StreamLambdaHandler` whose `beforeCheckpoint` sends one synthetic request to an unmapped path (404 error path, never `/health`, which touches the DB) through the container handler, and serialises an in-memory `ReadinessStatus` with Jackson (research R3)
 - [ ] T029 [US3] Redeploy and measure per quickstart §4. Record `Restore Duration` and cold/warm timings in `specs/001-backend-hosting/quickstart.md` under a "Measured results" section, and adjust memory in `template.yaml` only if the data justifies it
+  - **Deferred past merge**: SnapStart verified (restore 0.74 s; first request after deploy 2.09 s vs 6.2 s before). The 10-sample ≥30-min-idle series (SC-003) was in progress at merge time; results go in a follow-up PR.
 
 **Checkpoint**: SC-003 and SC-004 measured and met, or the deviation is documented for escalation (research R3, native image)
 
@@ -131,7 +132,8 @@ description: "Task list for 001-backend-hosting"
 - [X] T033 [US4] Add an `AWS::Scheduler::Schedule` `rate(10 minutes)` targeting `GuardFunction`, with its execution role, in `template.yaml` (SC-008)
 - [X] T034 [US4] Validate the burst cap and the shutoff per quickstart §6, including R7-a (reserved concurrency 0 is allowed) and R7-b (a redeploy doesn't clear it). If R7-a fails, implement the `AuthType: AWS_IAM` fallback in `GuardFunction` and update research.md
 - [X] T035 [P] [US4] Write `docs/deployment.md` (FR-013, FR-016): one-time account setup (IAM admin user with MFA, `aws login`, no access keys, no everyday root use, both USD 1 budgets), prerequisites, deploy, rollback, re-enable after shutoff, runtime configuration keys, and the S3 artifacts-bucket 1-day lifecycle command (research R11)
-- [ ] T036 [US4] Validate rollback per quickstart §5 (SC-006) and a from-scratch deploy following `docs/deployment.md` only (SC-005)
+- [X] T036 [US4] Validate rollback per quickstart §5 (SC-006) and a from-scratch deploy following `docs/deployment.md` only (SC-005)
+  - Rollback verified in production: `live` 5 → 4 in 2 s, serving `200 ready` immediately (SC-006). Fresh-clone timing for SC-005 waived by the account owner; the guide's commands were exercised against the live stack.
 
 **Checkpoint**: All four user stories are independently functional in production
 
@@ -141,7 +143,9 @@ description: "Task list for 001-backend-hosting"
 
 - [X] T037 [P] Replace the placeholder `README.md` with a project overview, local run (`./mvnw spring-boot:test-run`), tests, and a link to `docs/deployment.md`
 - [ ] T038 Run the full quickstart (§1–§7) end to end and tick the results in the PR description
+  - **Deferred past merge**: §1–§6 have each been run during implementation (see the PR description); the consolidated end-to-end run follows T029.
 - [ ] T039 Review cost after deploy: Billing shows USD 0.00, the budget exists, log retention is 7 days, and the only EventBridge schedule targets the guard function, never the API (FR-011, SC-002, quickstart §7)
+  - **Deferred past merge**: needs a billing period to elapse (SC-002).
 - [X] T040 Add `scripts/smoke-lambda-package.sh`: unpack `target/wikigerminare-lambda.zip`, start a throwaway Postgres, invoke `StreamLambdaHandler` with a Function URL `GET /health` event and assert `200 ready`. Run it before every deploy (and in CI, feature 002). This closes the gap that let a missing runtime jar reach production (found during T017)
 
 ---

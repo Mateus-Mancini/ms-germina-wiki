@@ -22,7 +22,7 @@ Host the Spring Boot API on **AWS Lambda in `sa-east-1`**, next to the Neon data
 
 **Primary Dependencies**:
 - Spring Boot 4.1 (webmvc, data-jpa)
-- `aws-serverless-java-container-springboot4` 3.0.0
+- `aws-serverless-java-container-springboot4` 3.0.2
 - `org.crac:crac`
 - AWS SAM CLI
 - Existing: springdoc-openapi, PostgreSQL driver, Lombok

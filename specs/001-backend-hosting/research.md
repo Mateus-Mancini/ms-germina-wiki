@@ -15,7 +15,7 @@ Each entry records a decision, why it was made, and what else was considered. Al
 
 ## R2. Running Spring Boot 4 inside Lambda
 
-- **Decision**: `com.amazonaws.serverless:aws-serverless-java-container-springboot4:3.0.0`, with a `RequestStreamHandler` whose container handler is initialised in a static block.
+- **Decision**: `com.amazonaws.serverless:aws-serverless-java-container-springboot4:3.0.2` (latest patch of the 3.0 line), with a `RequestStreamHandler` whose container handler is initialised in a static block.
 - **Rationale**: It's the official AWS adapter, tested against Spring Boot 4 / Spring Framework 7. The app stays a normal Spring MVC app: controllers are unchanged and it still runs locally with embedded Tomcat.
 - **Packaging**: a Maven profile `lambda` builds a shaded jar with embedded Tomcat **excluded**, which the adapter replaces. The default build keeps Tomcat, so `./mvnw spring-boot:run` keeps working.
 - **Alternatives considered**:

@@ -27,7 +27,7 @@ description: "Task list for 002-database-migrations"
 
 ## Phase 2: Foundational
 
-- [ ] T004 Create `src/main/resources/db/migration/V1__initial_schema.sql` from the team's `db-script`, SQL verbatim plus a header comment crediting the original script. Commit with `Co-authored-by: CamillaMorenoA <178440498+CamillaMorenoA@users.noreply.github.com>` (FR-001, FR-002, FR-012)
+- [X] T004 Create `src/main/resources/db/migration/V1__initial_schema.sql` from the team's `db-script`, SQL verbatim plus a header comment crediting the original script. Commit with `Co-authored-by: CamillaMorenoA <178440498+CamillaMorenoA@users.noreply.github.com>` (FR-001, FR-002, FR-012)
 
 **Checkpoint**: `./mvnw test` migrates every Testcontainers database to V1
 

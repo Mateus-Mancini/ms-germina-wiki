@@ -71,18 +71,20 @@ gh variable set WEB_APP_ORIGIN --env production -R "$R" --body "$WEB_APP_ORIGIN"
 ```bash
 gh api -X PUT "repos/$F/environments/production" --input - <<<'{"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}' >/dev/null
 gh api -X POST "repos/$F/environments/production/deployment-branch-policies" -f name=main -f type=branch >/dev/null
-cd ../GerminaWiki
-git fetch && git switch 003-ci-cd   # or main, once it has firebase.json
-firebase init hosting:github --project germinawiki
 ```
-Answers:
-- **Repository:** `Mateus-Mancini/GerminaWiki`
-- **"Set up the workflow to run a build script before every deploy?"** → **No**
-- **"Set up automatic deployment … when a PR is merged?"** → **No**
 
-The command creates a Hosting-only service account and stores its key as the repo secret `FIREBASE_SERVICE_ACCOUNT_GERMINAWIKI`. If it generates any `.github/workflows/firebase-*.yml` or `firebase.json` changes, discard them (`git checkout -- . && git clean -fd .github/workflows/firebase-*`). Our workflows are already in the repo.
+Create a Hosting-only service account 🌐 (`firebase init hosting:github` often can't access the repository through its OAuth app, and it stores the key at repo level, so we do it by hand):
+1. https://console.cloud.google.com/iam-admin/serviceaccounts?project=germinawiki → **Create service account** `github-hosting-deploy`.
+2. Grant the roles **Firebase Hosting Admin**, **API Keys Viewer** and **Cloud Run Viewer** (what the Firebase deploy action needs).
+3. **Keys → Add key → JSON**. The file downloads to `~/Downloads`.
 
-> **Accepted risk**: this key is long-lived and stored at repository level, so a workflow added in a same-repo PR could read it. It can only publish to Firebase Hosting. The upgrade path is keyless Workload Identity Federation (needs `gcloud`).
+Store it in the **environment** (so only `main` releases can read it), then delete the local copy:
+```bash
+KEY=$(ls -t ~/Downloads/germinawiki-*.json | head -1)
+gh secret set FIREBASE_SERVICE_ACCOUNT_GERMINAWIKI --env production -R "$F" < "$KEY" && shred -u "$KEY"
+```
+
+> **Accepted risk**: this is a long-lived key, but it can only publish to Firebase Hosting and is readable only by jobs in the `main`-only `production` environment. The upgrade path is keyless Workload Identity Federation (needs `gcloud`).
 
 ### 5. Required checks (after each workflow has run once)
 
@@ -104,5 +106,5 @@ protect "$F" lint-build
 gh api "repos/$R/environments" --jq '.environments[].name'   # neon-rehearsal, production
 gh secret list --env production -R "$R"                      # DB_PASS, DB_URL, DB_USER
 gh variable list --env production -R "$R"                    # ALERT_EMAIL, AWS_ROLE_ARN, WEB_APP_ORIGIN
-gh secret list -R "$F"                                       # FIREBASE_SERVICE_ACCOUNT_GERMINAWIKI
+gh secret list --env production -R "$F"                      # FIREBASE_SERVICE_ACCOUNT_GERMINAWIKI
 ```

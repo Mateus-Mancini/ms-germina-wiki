@@ -67,8 +67,9 @@
 
 ## R7. Web app deploy credentials
 
-- **Decision**: a Firebase service account (`firebase init hosting:github` creates it, grants **Firebase Hosting Admin**, **Cloud Run Viewer** and **API Keys Viewer**, and stores its key as the repo secret `FIREBASE_SERVICE_ACCOUNT_GERMINAWIKI`). The deploy uses `FirebaseExtended/action-hosting-deploy@v0` with `channelId: live`, only in environment `production` restricted to `main`.
-- **Trade-off (documented)**: this is a long-lived key, although its permissions only cover publishing to Hosting. The keyless alternative (Workload Identity Federation) needs the `gcloud` CLI and a separate pool/provider setup, which isn't installed and isn't justified for a static site. SC-005 (no long-lived keys) applies to the backend cloud account, and holds there. Upgrade path: WIF, if the team ever installs `gcloud`.
+- **Decision**: a dedicated Firebase service account `github-hosting-deploy` with **Firebase Hosting Admin**, **API Keys Viewer** and **Cloud Run Viewer**, created in the Cloud console. Its JSON key is stored as the **environment** secret `FIREBASE_SERVICE_ACCOUNT_GERMINAWIKI` in `production` (restricted to `main`). The deploy uses `FirebaseExtended/action-hosting-deploy@v0` with `channelId: live`.
+  - *Changed during implementation*: `firebase init hosting:github` couldn't access the repository through its GitHub OAuth app, and it would have stored the key at repo level (readable by same-repo PR workflows). The manual route keeps the key environment-scoped.
+- **Trade-off (documented)**: this is a long-lived key, although its permissions only cover publishing to Hosting and it's only readable by `main` releases. The keyless alternative (Workload Identity Federation) needs the `gcloud` CLI and a separate pool/provider setup, which isn't installed and isn't justified for a static site. SC-005 (no long-lived keys) applies to the backend cloud account, and holds there. Upgrade path: WIF, if the team ever installs `gcloud`.
 
 ## R8. Web app check pipeline (FR-001)
 

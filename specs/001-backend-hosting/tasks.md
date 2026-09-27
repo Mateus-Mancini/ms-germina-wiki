@@ -88,7 +88,7 @@ description: "Task list for 001-backend-hosting"
 
 ### Tests for User Story 2 (write first, must fail)
 
-- [ ] T018 [P] [US2] Write `src/test/java/com/wikigerminare/service/HealthServiceTest.java` (Mockito) covering three cases: the repository succeeds → `ready`; it throws → `not_ready`; it exceeds the timeout → `not_ready`
+- [X] T018 [P] [US2] Write `src/test/java/com/wikigerminare/service/HealthServiceTest.java` (Mockito) covering three cases: the repository succeeds → `ready`; it throws → `not_ready`; it exceeds the timeout → `not_ready`
 - [ ] T019 [P] [US2] Write `src/test/java/com/wikigerminare/controller/HealthControllerTest.java` (`@WebMvcTest`). It asserts 200 and 503, a body of exactly `{"status":"ready"}` or `{"status":"not_ready"}` (`status`: "`ready` or `not_ready`. There are no other fields."), `Cache-Control: no-store`, and no auth required
 - [ ] T020 [P] [US2] Write `src/test/java/com/wikigerminare/HealthIntegrationTest.java` (`@SpringBootTest` + Testcontainers). It expects 200 `ready` against a live container and 503 `not_ready` in under 10 s after the container is stopped
 
@@ -96,7 +96,7 @@ description: "Task list for 001-backend-hosting"
 
 - [X] T021 [P] [US2] Create `src/main/java/com/wikigerminare/dto/ReadinessStatus.java`, a record with a single field `status` serialised as `ready` / `not_ready` (data-model.md)
 - [X] T022 [P] [US2] Create `src/main/java/com/wikigerminare/repository/HealthRepository.java`, which runs `SELECT 1` via `JdbcTemplate` with a 3 s query timeout (research R10, R13)
-- [ ] T023 [US2] Create `src/main/java/com/wikigerminare/service/HealthService.java`, which maps a repository success to `ready` and any exception or timeout to `not_ready`, logging the cause at WARN without exposing it (FR-003, FR-004)
+- [X] T023 [US2] Create `src/main/java/com/wikigerminare/service/HealthService.java`, which maps a repository success to `ready` and any exception or timeout to `not_ready`, logging the cause at WARN without exposing it (FR-003, FR-004)
 - [ ] T024 [US2] Create `src/main/java/com/wikigerminare/controller/HealthController.java`: `GET /health` returns 200 or 503 with `Cache-Control: no-store` (contracts/health.openapi.yaml)
 - [ ] T025 [US2] Run `./mvnw test`, confirm T018–T020 pass, and redeploy. Validate `/health` in production per quickstart §3 and SC-007
 

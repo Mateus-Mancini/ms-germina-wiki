@@ -77,6 +77,14 @@ Resources:
           SPRING_DATASOURCE_USERNAME: !Ref DbUsername
           SPRING_DATASOURCE_PASSWORD: !Ref DbPassword
 
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: germinawiki-alerts
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlertEmail
+
 Outputs:
   ApiUrl:
     Description: API base URL for the web app (Function URL of alias 'live'; stable across deploys)

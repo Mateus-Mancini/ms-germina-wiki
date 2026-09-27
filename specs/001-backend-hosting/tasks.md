@@ -51,7 +51,7 @@ description: "Task list for 001-backend-hosting"
 
   (research R3, R10)
 - [X] T009 [P] Create `src/main/resources/application-lambda.properties` (springdoc api-docs and swagger-ui disabled; log levels) and `src/main/resources/application-local.properties`
-- [ ] T010 Create `src/main/java/com/wikigerminare/lambda/StreamLambdaHandler.java`, a `RequestStreamHandler` with the Spring Boot 4 container handler initialised in a static block (research R2)
+- [X] T010 Create `src/main/java/com/wikigerminare/lambda/StreamLambdaHandler.java`, a `RequestStreamHandler` with the Spring Boot 4 container handler initialised in a static block (research R2)
 - [ ] T011 Create base `template.yaml`:
   - parameters `DbUrl`, `DbUsername`, `DbPassword` (NoEcho), `WebAppOrigin`, `AlertEmail`
   - `ApiFunction`: `java21`, `arm64`, 2048 MB, 20 s timeout, handler `StreamLambdaHandler`, `CodeUri: target/wikigerminare-lambda.zip`

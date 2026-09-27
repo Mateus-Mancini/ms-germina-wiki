@@ -8,6 +8,12 @@
 
 **Input**: User description: "Task infra-cicd: pipelines for build, lint, test and deploy on push/merge, for both the backend API (ms-germina-wiki) and the web app (GerminaWiki). Pull requests must be checked automatically; merges to main must deploy to production (the only environment), including database migrations for the backend. Must stay free and must not store long-lived cloud credentials where avoidable."
 
+## Clarifications
+
+### Session 2026-09-27
+
+- Q: If the production readiness check fails right after an automated backend deploy, should the pipeline roll back automatically? → A: Yes. On any result other than ready (except the cost guard's deliberate stop), move production back to the previous version automatically and mark the pipeline failed.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Every pull request is checked automatically (Priority: P1)
@@ -38,7 +44,7 @@ When a backend PR is merged into `main`, the pipeline applies any pending databa
 **Acceptance Scenarios**:
 
 1. **Given** a merge to `main`, **When** the pipeline runs, **Then** it re-runs the checks, applies pending migrations, deploys, and verifies the readiness check returns ready.
-2. **Given** the post-deploy readiness check fails, **When** the pipeline ends, **Then** it's marked failed, and the documented rollback procedure applies.
+2. **Given** the post-deploy readiness check fails, **When** the pipeline detects it, **Then** production is automatically switched back to the previous version, the pipeline is marked failed, and its summary names both versions.
 3. **Given** two merges land close together, **When** both pipelines start, **Then** deploys run one at a time, in order, never concurrently.
 4. **Given** the pipeline's cloud access, **When** it's inspected, **Then** it uses short-lived credentials limited to deploying this project, and no long-lived cloud key is stored in the repository settings.
 
@@ -63,6 +69,8 @@ When a web app PR is merged into `main`, the pipeline builds the static site and
 
 - A migration fails during a production pipeline: the API isn't deployed, the pipeline fails visibly, and the database is left at the last successful migration.
 - The API is stopped by the cost guard when a deploy runs: the deploy still succeeds, and the stop stays in place. The post-deploy check reports "stopped" (429) as a distinct, non-healthy outcome.
+- Automatic rollback restores the previous *code*, not the schema: migrations stay applied. Migrations therefore MUST stay backward-compatible with the previous API version (add first, remove in a later release). This is documented in the migrations guide.
+- The very first automated deploy has a previous version to return to (versions from manual deploys are retained); if none exists, the pipeline fails without rollback.
 - The database is suspended when checks or migrations run: they wait for it to wake up instead of failing.
 - A PR from a fork, or from a contributor without access: checks run, but secrets and production credentials are never exposed to it.
 - Pipeline minutes: runs must stay within the free allowance for the repositories' visibility.
@@ -77,6 +85,7 @@ When a web app PR is merged into `main`, the pipeline builds the static site and
 - **FR-004**: Backend PRs that add or change migrations MUST rehearse them against a disposable copy of production, which is removed afterwards.
 - **FR-005**: A merge to backend `main` MUST, in order: re-run the checks, apply pending migrations, deploy the API, and verify readiness.
 - **FR-006**: The API MUST NOT be deployed if migrations fail.
+- **FR-014**: If the post-deploy readiness check doesn't report ready (other than the cost guard's deliberate stop), the pipeline MUST automatically restore the previous API version and fail.
 - **FR-007**: Production deployments MUST NOT run concurrently in the same repository.
 - **FR-008**: The backend pipeline MUST authenticate to the cloud provider with short-lived credentials, restricted to what deploying this project needs, and usable only from the backend repository's `main` branch.
 - **FR-009**: A merge to web app `main` MUST build the static site and publish it to the production web address.
@@ -103,6 +112,7 @@ When a web app PR is merged into `main`, the pipeline builds the static site and
 - **SC-005**: No long-lived cloud access key for the backend deployment exists in repository settings.
 - **SC-006**: The pipelines add USD 0.00 to monthly cost.
 - **SC-007**: A deliberately failing migration on `main` stops the pipeline before the API is deployed, in 100% of attempts.
+- **SC-008**: After a deploy whose readiness check fails, the previous version is serving again within 2 minutes of the failure, without human action.
 
 ## Assumptions
 

@@ -70,7 +70,8 @@ Each entry records a decision, why it was made, and what else was considered. Al
   - A 10-minute schedule meets the 15-minute bound in SC-008.
   - A concurrency of 0 makes the Function URL return 429 without invoking anything.
   - Python avoids a second Maven module and a Java cold start for a ~60-line ops script (see Complexity Tracking in `plan.md`). It lives in its own file rather than inline in the template so it can be unit-tested (constitution IV).
-- **To verify during implementation**:
+- **Verified in production (2026-09-27, T034)**: (a) reserved concurrency **0 is allowed** on the new account (quota 10), and the API returns `429 ReservedFunctionConcurrentInvocationLimitExceeded` without invoking, so the AWS_IAM fallback isn't needed; (b) a full `sam deploy` (to version 6) **kept** the stop in place; a second trip doesn't re-send the email. Re-enabled with `delete-function-concurrency` → `200 ready`.
+- **Originally to verify during implementation**:
   - (a) Setting reserved concurrency to **0** is allowed under the 10-quota rule. It leaves unreserved concurrency at 10, the account minimum. **Fallback**: switch the alias Function URL to `AuthType: AWS_IAM`, which makes public calls get 403 without invoking.
   - (b) A later `sam deploy` doesn't silently clear the shutoff, since `ReservedConcurrentExecutions` isn't declared in the template. The quickstart has a check for this.
 - **Alternative considered**: AWS Budgets actions. Rejected because billing data lags 8–24 h, which is too slow for SC-008, and the actions can't change Lambda concurrency directly.

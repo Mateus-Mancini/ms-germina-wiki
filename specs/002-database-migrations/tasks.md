@@ -73,7 +73,7 @@ description: "Task list for 002-database-migrations"
 
 **Independent Test**: quickstart §5 (branch guard, checksum guard)
 
-- [ ] T011 [P] [US3] Write `docs/database-migrations.md`: naming convention, immutability rule, add → test → rehearse → PR → owner applies from `main`, what to do when a migration fails, and "fix forward" instead of editing (FR-011)
+- [X] T011 [P] [US3] Write `docs/database-migrations.md`: naming convention, immutability rule, add → test → rehearse → PR → owner applies from `main`, what to do when a migration fails, and "fix forward" instead of editing (FR-011)
 - [ ] T012 [US3] Validate the guards per quickstart §5: production refused from a feature branch; an edited V1 rejected by checksum on a rehearsal branch (SC-004). This needs T010 done, so that V1 is recorded on `main`
 
 ---

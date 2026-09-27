@@ -43,6 +43,9 @@ Resources:
       MemorySize: 2048
       Timeout: 20
       AutoPublishAlias: live
+      # Publish a new version on ANY property change (env vars, memory, SnapStart), not only code changes;
+      # versions freeze their configuration, so otherwise such changes never reach the 'live' alias.
+      AutoPublishAliasAllProperties: true
       # Bound to the 'live' alias: the URL stays the same across deploys and rollbacks.
       # CORS lives here (not in Spring) so preflights are answered without invoking the function.
       FunctionUrlConfig:

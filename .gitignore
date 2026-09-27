@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### AWS SAM ###
+.aws-sam/
+samconfig.local.toml
+
+### Python ###
+__pycache__/

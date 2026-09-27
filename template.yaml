@@ -1,0 +1,176 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  GerminaWiki backend API (ms-germina-wiki) on AWS Lambda, sa-east-1.
+  Every resource here stays within AWS Always Free limits (see specs/001-backend-hosting).
+
+Parameters:
+  DbUrl:
+    Type: String
+    NoEcho: true
+    Description: Neon pooled JDBC URL (jdbc:postgresql://<host>-pooler.../db?sslmode=require)
+  DbUsername:
+    Type: String
+    NoEcho: true
+  DbPassword:
+    Type: String
+    NoEcho: true
+  WebAppOrigin:
+    Type: String
+    AllowedPattern: "^https://[a-z0-9.-]+$"
+    Description: Official web app origin allowed by CORS, e.g. https://germinawiki.web.app
+  AlertEmail:
+    Type: String
+    Description: Receives budget alerts and usage-guard shutoff notifications
+
+Resources:
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/germinawiki-api
+      RetentionInDays: 7
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: germinawiki-api
+      Description: GerminaWiki REST API (Spring Boot)
+      CodeUri: target/wikigerminare-lambda.zip
+      Handler: com.wikigerminare.lambda.StreamLambdaHandler::handleRequest
+      Runtime: java21
+      Architectures:
+        - arm64
+      MemorySize: 2048
+      Timeout: 20
+      AutoPublishAlias: live
+      # Publish a new version on ANY property change (env vars, memory, SnapStart), not only code changes;
+      # versions freeze their configuration, so otherwise such changes never reach the 'live' alias.
+      AutoPublishAliasAllProperties: true
+      # Snapshot of the initialised JVM + Spring context, restored on cold start (free for Java).
+      SnapStart:
+        ApplyOn: PublishedVersions
+      # Bound to the 'live' alias: the URL stays the same across deploys and rollbacks.
+      # CORS lives here (not in Spring) so preflights are answered without invoking the function.
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - !Ref WebAppOrigin
+            - http://localhost:3000
+          AllowMethods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+          AllowHeaders:
+            - Authorization
+            - Content-Type
+          MaxAge: 86400
+      LoggingConfig:
+        LogFormat: Text
+        LogGroup: !Ref ApiLogGroup
+      Environment:
+        Variables:
+          SPRING_PROFILES_ACTIVE: lambda
+          SPRING_DATASOURCE_URL: !Ref DbUrl
+          SPRING_DATASOURCE_USERNAME: !Ref DbUsername
+          SPRING_DATASOURCE_PASSWORD: !Ref DbPassword
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: germinawiki-alerts
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlertEmail
+
+  MonthlyBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: germinawiki-monthly
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: 1
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlertEmail
+
+  GuardLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/germinawiki-usage-guard
+      RetentionInDays: 7
+
+  # Stops the API (reserved concurrency 0) at 80% of the Lambda free tier and emails the owner (FR-015).
+  GuardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: germinawiki-usage-guard
+      Description: Stops germinawiki-api before Lambda free-tier limits are exceeded
+      CodeUri: infra/guard/
+      Handler: guard.handler
+      Runtime: python3.13
+      Architectures:
+        - arm64
+      MemorySize: 128
+      Timeout: 30
+      LoggingConfig:
+        LogFormat: Text
+        LogGroup: !Ref GuardLogGroup
+      Environment:
+        Variables:
+          API_FUNCTION_NAME: !Ref ApiFunction
+          ALERT_TOPIC_ARN: !Ref AlertTopic
+          THRESHOLD: "0.8"
+      Events:
+        EveryTenMinutes:
+          Type: ScheduleV2
+          Properties:
+            Name: germinawiki-usage-guard
+            ScheduleExpression: rate(10 minutes)
+            FlexibleTimeWindow:
+              Mode: "OFF"
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cloudwatch:GetMetricStatistics
+                - lambda:ListFunctions
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - lambda:GetFunctionConcurrency
+                - lambda:PutFunctionConcurrency
+              Resource: !GetAtt ApiFunction.Arn
+            - Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref AlertTopic
+
+Outputs:
+  ApiUrl:
+    Description: API base URL for the web app (Function URL of alias 'live'; stable across deploys)
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl
+  ApiFunctionName:
+    Description: Needed for rollback and re-enable commands
+    Value: !Ref ApiFunction
+  LiveVersion:
+    Description: Version currently behind the 'live' alias
+    Value: !Ref ApiFunction.Version

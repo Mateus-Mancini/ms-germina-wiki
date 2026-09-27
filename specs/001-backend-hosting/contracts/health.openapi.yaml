@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: GerminaWiki API - Readiness
+  version: 1.0.0
+  description: |
+    Readiness check the web app calls on load to wake the backend and its database.
+
+    Platform-level responses clients MUST also handle (they don't come from the application):
+    - `429 Too Many Requests`: concurrency cap reached, or the API was stopped by the usage
+      guard. It may arrive without CORS headers, in which case browsers surface a network error.
+      Clients treat 429 and network errors alike: show a retry state and back off.
+    - `413 Payload Too Large`: request body over 6 MB.
+servers:
+  - url: https://{functionUrlId}.lambda-url.sa-east-1.on.aws
+    variables:
+      functionUrlId:
+        default: example
+paths:
+  /health:
+    get:
+      operationId: getReadiness
+      summary: Report whether the API and its database are ready
+      security: []
+      responses:
+        "200":
+          description: The database answered; the API is ready.
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReadinessStatus" }
+              example: { status: ready }
+        "503":
+          description: The database didn't answer within the time limit (the whole response takes under 10 s).
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReadinessStatus" }
+              example: { status: not_ready }
+components:
+  schemas:
+    ReadinessStatus:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]

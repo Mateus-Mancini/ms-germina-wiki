@@ -43,6 +43,24 @@ Resources:
       MemorySize: 2048
       Timeout: 20
       AutoPublishAlias: live
+      # Bound to the 'live' alias: the URL stays the same across deploys and rollbacks.
+      # CORS lives here (not in Spring) so preflights are answered without invoking the function.
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - !Ref WebAppOrigin
+            - http://localhost:3000
+          AllowMethods:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+          AllowHeaders:
+            - Authorization
+            - Content-Type
+          MaxAge: 86400
       LoggingConfig:
         LogFormat: Text
         LogGroup: !Ref ApiLogGroup
@@ -52,3 +70,4 @@ Resources:
           SPRING_DATASOURCE_URL: !Ref DbUrl
           SPRING_DATASOURCE_USERNAME: !Ref DbUsername
           SPRING_DATASOURCE_PASSWORD: !Ref DbPassword
+

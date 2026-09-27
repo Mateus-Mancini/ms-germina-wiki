@@ -140,6 +140,14 @@ Resources:
           API_FUNCTION_NAME: !Ref ApiFunction
           ALERT_TOPIC_ARN: !Ref AlertTopic
           THRESHOLD: "0.8"
+      Events:
+        EveryTenMinutes:
+          Type: ScheduleV2
+          Properties:
+            Name: germinawiki-usage-guard
+            ScheduleExpression: rate(10 minutes)
+            FlexibleTimeWindow:
+              Mode: "OFF"
       Policies:
         - Statement:
             - Effect: Allow

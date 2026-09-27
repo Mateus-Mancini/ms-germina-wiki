@@ -3,12 +3,12 @@
 # Unit/integration tests run on the Maven classpath; this runs the unpacked zip, so a missing
 # runtime jar fails here instead of in production.
 #
-# Usage: ./mvnw -Plambda -DskipTests package && scripts/smoke-lambda-package.sh
+# Usage: ./mvnw -Plambda -DskipTests clean package && scripts/smoke-lambda-package.sh
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 zip="$root/target/wikigerminare-lambda.zip"
-[[ -f "$zip" ]] || { echo "Missing $zip. Run: ./mvnw -Plambda -DskipTests package" >&2; exit 1; }
+[[ -f "$zip" ]] || { echo "Missing $zip. Run: ./mvnw -Plambda -DskipTests clean package" >&2; exit 1; }
 
 work="$(mktemp -d)"
 container=""

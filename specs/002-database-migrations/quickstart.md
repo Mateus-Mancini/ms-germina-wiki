@@ -50,7 +50,7 @@ Then compare the production catalog with `data-model.md` (8 tables, 2 enums, 4 t
 ## 6. API unaffected (FR-008, SC-007)
 
 ```bash
-./mvnw -Plambda -DskipTests package
+./mvnw -Plambda -DskipTests clean package
 unzip -l target/wikigerminare-lambda.zip | grep -i flyway   # expect: no output
 scripts/smoke-lambda-package.sh                              # SMOKE OK
 ```

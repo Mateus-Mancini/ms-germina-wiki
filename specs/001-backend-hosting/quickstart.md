@@ -6,7 +6,7 @@ This is the run guide that proves feature `001-backend-hosting` works end to end
 
 **One-time account setup** (owner):
 - An AWS account with MFA on root.
-- An IAM Identity Center admin user; configure the CLI with `aws configure sso` and use that profile, never root (FR-016).
+- An IAM admin user with MFA and console access only (no access keys). The CLI authenticates with short-lived credentials via `aws login`; root is never used day to day (FR-016). IAM Identity Center isn't used: without AWS Organizations it can't grant account access, and joining an Organization would move the account off the Free plan.
 - Free Tier usage alerts enabled in Billing preferences.
 
 **Tools on the owner's machine**:

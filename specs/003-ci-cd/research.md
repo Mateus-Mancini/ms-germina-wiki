@@ -23,6 +23,10 @@
   - SNS on `germinawiki-alerts`
   - Budgets on `germinawiki-monthly`
   - Logs on `/aws/lambda/germinawiki-*`
+- **Privilege-escalation guard**: the deploy role must create IAM roles for the stack's functions and scheduler, so a malicious or mistaken template could otherwise create an admin role. The bootstrap defines a **permissions boundary** `germinawiki-workload-boundary` (logs, `GetMetricStatistics`, `ListFunctions`, get/put concurrency and invoke on `germinawiki-*`, SNS publish on the alert topic).
+  - The deploy role may only `CreateRole`, `PutRolePolicy`, `AttachRolePolicy` or `PutRolePermissionsBoundary` when that boundary is set, and is denied `DeleteRolePermissionsBoundary`.
+  - `template.yaml` applies the boundary to every generated role (`Globals.Function.PermissionsBoundary` and the ScheduleV2 `PermissionsBoundary`).
+  - `lambda:*` stays scoped by resource to `function:germinawiki-*`.
 - **Bootstrap**: the owner deploys `infra/github-oidc.yaml` once from their machine (`aws cloudformation deploy`). It creates the OIDC provider, the role and the policy. It's kept separate from the app stack, so the pipeline can't widen its own permissions.
 
 ## R3. Backend check pipeline (FR-001, FR-002, SC-002)

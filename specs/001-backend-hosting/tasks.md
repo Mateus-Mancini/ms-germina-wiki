@@ -110,7 +110,7 @@ description: "Task list for 001-backend-hosting"
 
 **Independent Test**: quickstart §4, cold and warm `curl -w` timings over 10 cold occasions
 
-- [ ] T026 [US3] Enable `SnapStart: ApplyOn: PublishedVersions` on `ApiFunction` in `template.yaml` (research R3)
+- [X] T026 [US3] Enable `SnapStart: ApplyOn: PublishedVersions` on `ApiFunction` in `template.yaml` (research R3)
 - [ ] T027 [P] [US3] Write `src/test/java/com/wikigerminare/lambda/SnapStartPrimingTest.java`. It asserts that priming completes without opening any DB connection (Hikari active + idle connections = 0 after `beforeCheckpoint`)
 - [ ] T028 [US3] Create `src/main/java/com/wikigerminare/lambda/SnapStartPriming.java`, an `org.crac.Resource` registered in `StreamLambdaHandler` whose `beforeCheckpoint` sends one synthetic request to an unmapped path (404 error path, never `/health`, which touches the DB) through the container handler, and serialises an in-memory `ReadinessStatus` with Jackson (research R3)
 - [ ] T029 [US3] Redeploy and measure per quickstart §4. Record `Restore Duration` and cold/warm timings in `specs/001-backend-hosting/quickstart.md` under a "Measured results" section, and adjust memory in `template.yaml` only if the data justifies it

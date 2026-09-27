@@ -46,6 +46,9 @@ Resources:
       # Publish a new version on ANY property change (env vars, memory, SnapStart), not only code changes;
       # versions freeze their configuration, so otherwise such changes never reach the 'live' alias.
       AutoPublishAliasAllProperties: true
+      # Snapshot of the initialised JVM + Spring context, restored on cold start (free for Java).
+      SnapStart:
+        ApplyOn: PublishedVersions
       # Bound to the 'live' alias: the URL stays the same across deploys and rollbacks.
       # CORS lives here (not in Spring) so preflights are answered without invoking the function.
       FunctionUrlConfig:

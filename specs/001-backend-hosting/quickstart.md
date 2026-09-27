@@ -34,7 +34,9 @@ Stop the Postgres container (`docker stop <id>`) and call `/health` again. Expec
 
 ```bash
 ./mvnw -Plambda -DskipTests package
-sam deploy --parameter-overrides DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" AlertEmail='<owner email>'
+source ~/.config/germinawiki/prod.env
+sam deploy --parameter-overrides DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" \
+  WebAppOrigin="$WEB_APP_ORIGIN" AlertEmail="$ALERT_EMAIL"
 ```
 Then confirm the SNS subscription email (one click), and note the `ApiUrl`, `ApiFunctionName` and `LiveVersion` outputs.
 

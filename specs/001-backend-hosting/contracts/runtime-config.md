@@ -12,7 +12,7 @@ This is the interface between the repository and the production environment: wha
 | `WebAppOrigin` | yes | no | `https://germinawiki.web.app` | Official web app origin for CORS (FR-002) |
 | `AlertEmail` | yes | no | owner's email | Budget alert + guard shutoff notifications |
 
-Never commit values for the secret parameters. `samconfig.toml` holds only non-secret defaults (stack name, region, capabilities, `WebAppOrigin`).
+Never commit values for the secret parameters. `samconfig.toml` holds only non-secret defaults (stack name, region, capabilities, S3 settings) and **no parameters**, because CLI `--parameter-overrides` replaces the file's value rather than merging with it. Every deploy passes all five parameters, sourced from the owner's local secrets file (or CI secrets in feature 002).
 
 ## Stack outputs
 

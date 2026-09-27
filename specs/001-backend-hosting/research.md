@@ -105,7 +105,7 @@ Each entry records a decision, why it was made, and what else was considered. Al
 
 ## R12. Logging (FR-012)
 
-- **Decision**: an explicit `AWS::Logs::LogGroup` per function with `RetentionInDays: 7`, and Lambda's JSON log format, with app level `INFO` and system level `WARN`.
+- **Decision**: an explicit `AWS::Logs::LogGroup` per function with `RetentionInDays: 7`, and Lambda's **Text** log format. The JSON format was rejected: its system-level filter at `WARN` would drop the `REPORT` lines that carry `Restore Duration` and `Duration`, which we need to measure SC-003 and SC-004. Spring's own log levels control application verbosity (`lambda` profile).
 - **Rationale**: 7 days per the clarification. The 5 GB/month ingestion is free, and there's a large margin at this traffic.
 
 ## R13. Readiness check design (FR-003, FR-004)

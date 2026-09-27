@@ -58,7 +58,7 @@ description: "Task list for 001-backend-hosting"
   - env vars `SPRING_DATASOURCE_*` and `SPRING_PROFILES_ACTIVE=lambda`
   - `AutoPublishAlias: live`, no VPC
   - `AWS::Logs::LogGroup` with `RetentionInDays: 7` (FR-005, FR-007, FR-008, FR-012)
-- [ ] T012 [P] Create `samconfig.toml` with non-secret defaults: stack `ms-germina-wiki`, region `sa-east-1`, `capabilities = CAPABILITY_IAM`, `resolve_s3 = true`, `WebAppOrigin` placeholder (contracts/runtime-config.md)
+- [ ] T012 [P] Create `samconfig.toml` with non-secret defaults: stack `ms-germina-wiki`, region `sa-east-1`, `capabilities = CAPABILITY_IAM`, `resolve_s3 = true`, `confirm_changeset = true`, and no parameters (CLI overrides replace them; contracts/runtime-config.md)
 
 **Checkpoint**: `./mvnw test` passes on Testcontainers; `./mvnw -Plambda package` builds the Lambda jar; `sam validate --lint` passes
 

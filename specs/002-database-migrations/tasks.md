@@ -80,7 +80,7 @@ description: "Task list for 002-database-migrations"
 
 ## Phase 6: Polish
 
-- [ ] T013 [P] Update `README.md` (layout, the migrations link) and `docs/deployment.md` (the `NEON_PROJECT_ID` prerequisite, running migrations before deploying code that needs them)
+- [X] T013 [P] Update `README.md` (layout, the migrations link) and `docs/deployment.md` (the `NEON_PROJECT_ID` prerequisite, running migrations before deploying code that needs them)
 - [ ] T014 Verify quickstart §6: the Lambda zip contains no Flyway, the smoke test passes, and the API's `/health` is unaffected (FR-008, SC-007)
 
 ---

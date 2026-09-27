@@ -33,6 +33,7 @@ There is also an account-wide `account-safety-net` budget (USD 1), created by ha
    export DB_USER='...' DB_PASS='...'
    export WEB_APP_ORIGIN='https://germinawiki.web.app'
    export ALERT_EMAIL='...'
+   export NEON_PROJECT_ID='...'   # non-secret; for migration rehearsals (npx neonctl projects list)
    ```
 
 **Tools:** JDK 21, Docker, AWS CLI v2, AWS SAM CLI.
@@ -53,6 +54,12 @@ Changing any parameter publishes a new version (`AutoPublishAliasAllProperties`)
 
 ## Deploy
 
+If the release depends on new migrations, apply them **first**, from `main` (see [database-migrations.md](database-migrations.md)):
+```bash
+scripts/db-migrate.sh production
+```
+
+Then deploy the API:
 ```bash
 source ~/.config/germinawiki/prod.env
 ./mvnw test                                  # unit, web and Testcontainers tests (never touch Neon)

@@ -2,7 +2,7 @@
 
 There is **only production**. The API runs on AWS Lambda in `sa-east-1` (São Paulo), next to the Neon database, and everything is defined in [`template.yaml`](../template.yaml). Design and rationale: [`specs/001-backend-hosting`](../specs/001-backend-hosting/).
 
-Only the **account owner** deploys, rolls back or re-enables by hand (FR-016). Teammates ship through the CI/CD pipeline on merge (feature `infra-cicd`).
+**Normally nobody deploys by hand**: every merge to `main` runs the release pipeline (checks → migrations → deploy → health check → automatic rollback), see [ci-cd.md](ci-cd.md). The manual steps below are the account owner's fallback (FR-016), e.g. when the pipeline itself is broken.
 
 ## What's deployed
 

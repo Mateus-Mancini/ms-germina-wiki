@@ -23,6 +23,12 @@ Parameters:
     Type: String
     Description: Receives budget alerts and usage-guard shutoff notifications
 
+Globals:
+  Function:
+    # Every role this stack creates carries the boundary from infra/github-oidc.yaml; the CI deploy role
+    # may only create or change roles that have it (prevents privilege escalation through the template).
+    PermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/germinawiki-workload-boundary
+
 Resources:
   ApiLogGroup:
     Type: AWS::Logs::LogGroup
@@ -146,6 +152,7 @@ Resources:
           Properties:
             Name: germinawiki-usage-guard
             ScheduleExpression: rate(10 minutes)
+            PermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/germinawiki-workload-boundary
             FlexibleTimeWindow:
               Mode: "OFF"
       Policies:

@@ -8,6 +8,7 @@ The database schema lives in versioned SQL files applied by [Flyway](https://doc
 2. **Plain PostgreSQL 18 SQL.** Each file runs in a single transaction: it either applies completely or not at all.
 3. **Never edit or rename a migration once it's merged into `main`.** Flyway stores a checksum of every applied file and refuses to run if one changes. To fix a mistake, add a new migration (fix forward).
 4. **Schema only.** No test or environment-specific data.
+5. **Stay compatible with the previous release.** A failed release rolls the API back to the previous version automatically, but migrations stay applied. So a migration must never break the version that's currently live: add columns or tables first, and remove or rename them in a *later* release, once no deployed code uses them.
 
 ## Workflow for a schema change
 
@@ -20,7 +21,7 @@ $EDITOR src/main/resources/db/migration/V2__add_pages_published_flag.sql
 ```
 If you change or add tables, extend [`SchemaMigrationTest`](../src/test/java/com/wikigerminare/SchemaMigrationTest.java) where it helps.
 
-3. **Rehearse on a copy of production** (account owner, or anyone with the Neon credentials). This creates a disposable Neon branch, migrates it, and deletes it:
+3. **Rehearse on a copy of production.** On your PR this happens automatically in the `rehearse-migrations` check, once the owner approves it. Locally (with Neon access) it creates a disposable Neon branch, migrates it, and deletes it:
    ```bash
    source ~/.config/germinawiki/prod.env
    scripts/db-migrate.sh rehearse
@@ -31,7 +32,7 @@ If you change or add tables, extend [`SchemaMigrationTest`](../src/test/java/com
    git switch main && git pull --ff-only
    scripts/db-migrate.sh production   # shows status, asks you to type 'yes'
    ```
-   The script refuses to run from any other branch, with uncommitted changes, or if local `main` differs from `origin/main`. Once CI/CD exists (feature 003), the pipeline runs this step.
+   The script refuses to run from any other branch, with uncommitted changes, or if local `main` differs from `origin/main`. **The release pipeline now runs this step automatically on every merge** (feature 003); the manual command is the owner's fallback.
 
 Check the current production version at any time (read-only):
 ```bash

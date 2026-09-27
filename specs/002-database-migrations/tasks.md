@@ -58,11 +58,13 @@ description: "Task list for 002-database-migrations"
   - `rehearse` creates a Neon branch with `--expires-at now+1h`, runs `flyway info/migrate/info` against its direct endpoint, and deletes the branch on exit
   - `production` checks that it's on `main`, the tree is clean and `HEAD == origin/main`, shows `info`, and requires `yes` (or `DB_MIGRATE_CONFIRM=yes`)
   - secrets are never echoed
-- [ ] T008 [US1] Add `NEON_PROJECT_ID` to the owner's secrets file (owner action; documented in `docs/deployment.md` prerequisites)
+- [X] T008 [US1] Add `NEON_PROJECT_ID` to the owner's secrets file (owner action; documented in `docs/deployment.md` prerequisites)
+  - Done by the owner (2026-09-27).
   - Project id is `rapid-surf-40273289` (org `org-wispy-paper-91429146`); the rehearsal (T009) passed it inline.
 - [X] T009 [US1] Rehearse V1 per quickstart §3 and record the output in the PR
   - Rehearsed 2026-09-27 on a disposable branch of Neon project `rapid-surf-40273289` (PG 18.6): V1 validated and applied in 0.8 s ("now at version v1"), branch deleted on exit, production untouched (still Empty Schema / V1 Pending).
-- [ ] T010 [US1] **After this feature is merged**: apply V1 to production from `main` per quickstart §4, re-run to prove idempotency (SC-002), and compare the production catalog with data-model.md (SC-001)
+- [X] T010 [US1] **After this feature is merged**: apply V1 to production from `main` per quickstart §4, re-run to prove idempotency (SC-002), and compare the production catalog with data-model.md (SC-001)
+  - Applied 2026-09-27 23:19 UTC from `main` (merge of #6): V1 applied in 1.3 s; a second run reported "up to date" (SC-002). Catalog comparison: 8 tables + `flyway_schema_history`, enums `comment_status` (OPEN,RESOLVED) and `user_role` (admin,member), `pgcrypto`, 4 `updated_at` triggers, 31 indexes (18 `idx_*`, 5 unique, 8 PK), matching the local PG18 result (SC-001).
 
 **Checkpoint**: production is at schema version 1
 
@@ -75,7 +77,8 @@ description: "Task list for 002-database-migrations"
 **Independent Test**: quickstart §5 (branch guard, checksum guard)
 
 - [X] T011 [P] [US3] Write `docs/database-migrations.md`: naming convention, immutability rule, add → test → rehearse → PR → owner applies from `main`, what to do when a migration fails, and "fix forward" instead of editing (FR-011)
-- [ ] T012 [US3] Validate the guards per quickstart §5: production refused from a feature branch; an edited V1 rejected by checksum on a rehearsal branch (SC-004). This needs T010 done, so that V1 is recorded on `main`
+- [X] T012 [US3] Validate the guards per quickstart §5: production refused from a feature branch; an edited V1 rejected by checksum on a rehearsal branch (SC-004). This needs T010 done, so that V1 is recorded on `main`
+  - Checksum guard: an edited comment in V1, rehearsed against a copy of production, was rejected (`Migration checksum mismatch for migration version 1`, exit 1, no change; rehearsal branch deleted). Branch guard: `production` from a non-main branch refused (exit 1) (SC-004, FR-005, FR-009).
 
 ---
 

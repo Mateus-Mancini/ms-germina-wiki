@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >-
+  GerminaWiki backend API (ms-germina-wiki) on AWS Lambda, sa-east-1.
+  Every resource here stays within AWS Always Free limits (see specs/001-backend-hosting).
+
+Parameters:
+  DbUrl:
+    Type: String
+    NoEcho: true
+    Description: Neon pooled JDBC URL (jdbc:postgresql://<host>-pooler.../db?sslmode=require)
+  DbUsername:
+    Type: String
+    NoEcho: true
+  DbPassword:
+    Type: String
+    NoEcho: true
+  WebAppOrigin:
+    Type: String
+    AllowedPattern: "^https://[a-z0-9.-]+$"
+    Description: Official web app origin allowed by CORS, e.g. https://germinawiki.web.app
+  AlertEmail:
+    Type: String
+    Description: Receives budget alerts and usage-guard shutoff notifications
+
+Resources:
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/germinawiki-api
+      RetentionInDays: 7
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: germinawiki-api
+      Description: GerminaWiki REST API (Spring Boot)
+      CodeUri: target/wikigerminare-lambda.zip
+      Handler: com.wikigerminare.lambda.StreamLambdaHandler::handleRequest
+      Runtime: java21
+      Architectures:
+        - arm64
+      MemorySize: 2048
+      Timeout: 20
+      AutoPublishAlias: live
+      LoggingConfig:
+        LogFormat: Text
+        LogGroup: !Ref ApiLogGroup
+      Environment:
+        Variables:
+          SPRING_PROFILES_ACTIVE: lambda
+          SPRING_DATASOURCE_URL: !Ref DbUrl
+          SPRING_DATASOURCE_USERNAME: !Ref DbUsername
+          SPRING_DATASOURCE_PASSWORD: !Ref DbPassword

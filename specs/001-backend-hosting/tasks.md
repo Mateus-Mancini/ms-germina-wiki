@@ -52,13 +52,13 @@ description: "Task list for 001-backend-hosting"
   (research R3, R10)
 - [X] T009 [P] Create `src/main/resources/application-lambda.properties` (springdoc api-docs and swagger-ui disabled; log levels) and `src/main/resources/application-local.properties`
 - [X] T010 Create `src/main/java/com/wikigerminare/lambda/StreamLambdaHandler.java`, a `RequestStreamHandler` with the Spring Boot 4 container handler initialised in a static block (research R2)
-- [ ] T011 Create base `template.yaml`:
+- [X] T011 Create base `template.yaml`:
   - parameters `DbUrl`, `DbUsername`, `DbPassword` (NoEcho), `WebAppOrigin`, `AlertEmail`
   - `ApiFunction`: `java21`, `arm64`, 2048 MB, 20 s timeout, handler `StreamLambdaHandler`, `CodeUri: target/wikigerminare-lambda.zip`
   - env vars `SPRING_DATASOURCE_*` and `SPRING_PROFILES_ACTIVE=lambda`
   - `AutoPublishAlias: live`, no VPC
   - `AWS::Logs::LogGroup` with `RetentionInDays: 7` (FR-005, FR-007, FR-008, FR-012)
-- [ ] T012 [P] Create `samconfig.toml` with non-secret defaults: stack `ms-germina-wiki`, region `sa-east-1`, `capabilities = CAPABILITY_IAM`, `resolve_s3 = true`, `confirm_changeset = true`, and no parameters (CLI overrides replace them; contracts/runtime-config.md)
+- [X] T012 [P] Create `samconfig.toml` with non-secret defaults: stack `ms-germina-wiki`, region `sa-east-1`, `capabilities = CAPABILITY_IAM`, `resolve_s3 = true`, `confirm_changeset = true`, and no parameters (CLI overrides replace them; contracts/runtime-config.md)
 
 **Checkpoint**: `./mvnw test` passes on Testcontainers; `./mvnw -Plambda package` builds the Lambda jar; `sam validate --lint` passes
 

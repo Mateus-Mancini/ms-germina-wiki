@@ -40,7 +40,7 @@ ROLE_ARN=$(aws cloudformation describe-stacks --stack-name germinawiki-github-oi
   --query "Stacks[0].Outputs[?OutputKey=='RoleArn'].OutputValue" --output text)
 echo "$ROLE_ARN"   # arn:aws:iam::<account>:role/germinawiki-github-deploy
 ```
-The role only trusts GitHub tokens from `ms-germina-wiki`'s **production** environment. Every IAM role the app stack creates must carry the `germinawiki-workload-boundary` permissions boundary.
+The role only trusts GitHub tokens from `ms-germina-wiki`'s **production** environment, identified by immutable owner and repository ids. To change the trusted repository later, pass `--parameter-overrides GitHubRepo=<owner>@<owner_id>/<repo>@<repo_id>`: `aws cloudformation deploy` otherwise reuses the stack's previous parameter values. Every IAM role the app stack creates must carry the `germinawiki-workload-boundary` permissions boundary.
 
 ### 2. Backend environment `production` (main only)
 

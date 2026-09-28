@@ -41,7 +41,7 @@ Merge a web app PR. The `deploy` job publishes to the `live` channel, and `https
 
 ## 7. Credentials (FR-008, SC-005)
 
-- In IAM, the role `germinawiki-github-deploy` has a trust subject of exactly `repo:Mateus-Mancini/ms-germina-wiki:environment:production`.
+- In IAM, the role `germinawiki-github-deploy` has a trust subject of exactly `repo:Mateus-Mancini@115586427/ms-germina-wiki@1365859536:environment:production`.
 - In repo settings, no `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` exist.
 - A workflow run from a non-`main` branch that tries to use environment `production` is refused by the environment's branch policy.
 

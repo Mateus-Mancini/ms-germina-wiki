@@ -54,6 +54,19 @@ class SchemaMigrationTest {
 	}
 
 	@Test
+	void queuesDeletedImageObjectsForStorageCleanup() {
+		// V2 (spec 005): deleted page_images rows queue their object key for removal from storage.
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM information_schema.tables WHERE table_name = 'image_object_deletions'",
+				Integer.class))
+			.isEqualTo(1);
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM information_schema.triggers WHERE trigger_name = 'page_images_queue_object_deletion'",
+				Integer.class))
+			.isEqualTo(1);
+	}
+
+	@Test
 	void enablesPgcrypto() {
 		assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_extension WHERE extname = 'pgcrypto'", Integer.class))
 			.isEqualTo(1);

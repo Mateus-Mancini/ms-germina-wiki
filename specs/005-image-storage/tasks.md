@@ -20,7 +20,7 @@ description: "Task list for 005-image-storage"
 ## Phase 1: Setup
 
 - [X] T001 Add to `pom.xml`: the AWS SDK v2 BOM, `s3` and `url-connection-client` (excluding the Apache and Netty clients), `spring-boot-starter-validation`; test-scoped Testcontainers MinIO (research R1, R2, R10)
-- [ ] T002 [P] Create `src/main/resources/db/migration/V2__image_object_deletions.sql`: table `image_object_deletions(object_key TEXT PRIMARY KEY, queued_at TIMESTAMPTZ NOT NULL DEFAULT now())` and an `AFTER DELETE ON page_images` trigger inserting `OLD.file_url` `ON CONFLICT DO NOTHING` (data-model.md)
+- [X] T002 [P] Create `src/main/resources/db/migration/V2__image_object_deletions.sql`: table `image_object_deletions(object_key TEXT PRIMARY KEY, queued_at TIMESTAMPTZ NOT NULL DEFAULT now())` and an `AFTER DELETE ON page_images` trigger inserting `OLD.file_url` `ON CONFLICT DO NOTHING` (data-model.md)
 - [ ] T003 [P] Create `infra/r2/cors.json`: PUT, GET and HEAD from `https://germinawiki.web.app` and `http://localhost:3000`, allowed header `Content-Type`, max age 3600 (research R8)
 
 ---

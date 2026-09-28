@@ -14,8 +14,8 @@
 
 **Purpose**: Verify schema and dependencies before mapping or implementation.
 
-- [ ] T001 Inspect the deployed `page_links` table read-only; record columns, primary key, unique constraints/indexes, existing duplicates and FK actions in `specs/007-wikilinks-backlinks/data-model.md`. Confirm whether one source-target row can be mapped/enforced without schema changes; stop and report incompatibility rather than adding DDL.
-- [ ] T002 Verify the `pages-api` content-write path is available for both create and PATCH before enabling full synchronization; current source has create but no update route. Record readiness and the existing PostgreSQL/auth prerequisites in `specs/007-wikilinks-backlinks/quickstart.md`; do not create a new page CRUD endpoint in this feature.
+- [x] T001 Inspect the deployed `page_links` table read-only; record columns, primary key, unique constraints/indexes, existing duplicates and FK actions in `specs/007-wikilinks-backlinks/data-model.md`. Confirm whether one source-target row can be mapped/enforced without schema changes; stop and report incompatibility rather than adding DDL.
+- [x] T002 Verify the `pages-api` content-write path is available for both create and PATCH before enabling full synchronization; current source has create but no update route. Record readiness and the existing PostgreSQL/auth prerequisites in `specs/007-wikilinks-backlinks/quickstart.md`; do not create a new page CRUD endpoint in this feature.
 
 ## Phase 2: Foundational
 

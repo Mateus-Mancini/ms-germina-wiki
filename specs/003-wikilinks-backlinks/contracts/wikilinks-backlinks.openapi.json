@@ -1,0 +1,84 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GerminaWiki WikiLinks and Backlinks API",
+    "version": "1.0.0",
+    "description": "Read resolved WikiLinks and backlinks for existing Wiki pages. Link relations are synchronized from the existing page Markdown write flow; this contract adds no mutation endpoints. Authentication remains provided by the host infrastructure."
+  },
+  "paths": {
+    "/api/pages/{pageId}/wikilinks": {
+      "parameters": [
+        {
+          "name": "pageId",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }
+      ],
+      "get": {
+        "summary": "List resolved WikiLinks from a page",
+        "description": "Returns one summary per distinct resolved target page. Unresolved slugs and tokens in inline/fenced code are not returned. Self-links are allowed.",
+        "operationId": "listPageWikiLinks",
+        "responses": {
+          "200": {
+            "description": "Resolved outgoing targets; empty array when there are none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/LinkedPageSummary" }
+                }
+              }
+            }
+          },
+          "400": { "description": "pageId is not a valid UUID" },
+          "404": { "description": "Source page does not exist" }
+        }
+      }
+    },
+    "/api/pages/{pageId}/backlinks": {
+      "parameters": [
+        {
+          "name": "pageId",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string", "format": "uuid" }
+        }
+      ],
+      "get": {
+        "summary": "List pages linking to a page",
+        "description": "Returns one summary per distinct source page that has a resolved relation to this target. Nullified or unresolved targets are not backlinks.",
+        "operationId": "listPageBacklinks",
+        "responses": {
+          "200": {
+            "description": "Resolved backlink sources; empty array when there are none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/LinkedPageSummary" }
+                }
+              }
+            }
+          },
+          "400": { "description": "pageId is not a valid UUID" },
+          "404": { "description": "Target page does not exist" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LinkedPageSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "slug"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string", "maxLength": 255 },
+          "slug": { "type": "string", "minLength": 1, "maxLength": 300 }
+        }
+      }
+    }
+  }
+}

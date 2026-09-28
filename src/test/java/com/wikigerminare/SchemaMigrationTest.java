@@ -59,13 +59,13 @@ class SchemaMigrationTest {
 	}
 
 	@Test
-	void recordsVersionOneAsSuccessfullyApplied() {
-		var latest = jdbc.queryForMap("""
-				SELECT version, success FROM flyway_schema_history
-				WHERE version IS NOT NULL ORDER BY installed_rank DESC LIMIT 1
-				""");
-
-		assertThat(latest).containsEntry("version", "1").containsEntry("success", true);
+	void recordsVersionOneAndNoFailedMigrations() {
+		// Pins V1 without pinning the latest version, so adding V2, V3, ... doesn't break this test.
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM flyway_schema_history WHERE version = '1' AND success", Integer.class))
+			.isEqualTo(1);
+		assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE NOT success", Integer.class))
+			.isZero();
 	}
 
 	private List<String> enumLabels(String type) {

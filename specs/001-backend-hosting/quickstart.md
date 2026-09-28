@@ -98,3 +98,25 @@ curl -s "$API_URL/health"   # served by the previous version
 - Billing → Budgets: `germinawiki-monthly` exists at USD 1 with actual and forecast alerts.
 - Billing → Bills, at each month end: total USD 0.00.
 - CloudWatch → Log groups: retention shows 7 days (FR-012).
+
+## Measured results (T029, 2026-09-27/28)
+
+`/health` from São Paulo, SnapStart + priming (live versions 4–7). 10 samples, 35 minutes apart; the first request after idle also wakes Neon.
+
+| Run (UTC) | Cold (first request) | Warm (next request) |
+|---|---|---|
+| 22:58 | 2.14 s | 0.11 s |
+| 23:33 | 1.96 s | 0.12 s |
+| 00:08 | 0.15 s, excluded: warmed by the rollback drill minutes earlier | 0.12 s |
+| 00:44 | 2.06 s | 0.08 s |
+| 01:19 | 2.23 s | 0.26 s |
+| 01:54 | 2.11 s | 0.07 s |
+| 02:29 | 1.73 s | 0.10 s |
+| 03:04 | 1.40 s | 0.11 s |
+| 03:39 | 2.13 s | 0.08 s |
+| 04:14 | 2.13 s | 0.10 s |
+
+- **SC-003 met**: all 9 cold samples under 3 s (1.40–2.23 s, median 2.11 s). Before SnapStart, the first request took 6.2 s.
+- **SC-004 met**: all warm samples under 300 ms (0.07–0.26 s).
+- Lambda REPORT: `Restore Duration` ≈ 0.74 s. No memory change was needed (2048 MB; max used ≈ 300 MB).
+

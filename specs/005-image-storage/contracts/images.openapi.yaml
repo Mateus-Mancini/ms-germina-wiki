@@ -1,0 +1,136 @@
+openapi: 3.1.0
+info:
+  title: GerminaWiki API - Images
+  version: 1.0.0
+  description: |
+    Direct-to-storage image uploads for wiki pages (spec 005). Image bytes never pass through the API.
+    Errors use the body {"error": "<message>"}. "Signed-in" means the request carries the principal
+    provided by auth-api; without it, protected endpoints return 401.
+paths:
+  /api/pages/{pageId}/images/uploads:
+    post:
+      operationId: requestImageUpload
+      summary: Get a short-lived permission to upload one image directly to storage
+      parameters: [{ $ref: "#/components/parameters/PageId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UploadRequest" }
+      responses:
+        "201":
+          description: Presigned PUT. The browser must send exactly these headers and the declared number of bytes.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UploadPermission" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/pages/{pageId}/images:
+    post:
+      operationId: confirmImageUpload
+      summary: Record an uploaded image after verifying it in storage
+      parameters: [{ $ref: "#/components/parameters/PageId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmRequest" }
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Image" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { description: The upload key doesn't belong to this page and user. }
+        "404": { description: Page not found, or no uploaded object for the key. }
+        "409": { description: The stored object doesn't match the approved type or size (it's deleted). }
+    get:
+      operationId: listPageImages
+      summary: List a page's images
+      parameters: [{ $ref: "#/components/parameters/PageId" }]
+      responses:
+        "200":
+          description: Images, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Image" }
+        "404": { $ref: "#/components/responses/Error" }
+  /api/images/{imageId}:
+    get:
+      operationId: getImage
+      summary: Stable image address; redirects to a short-lived signed storage URL
+      security: []
+      parameters: [{ $ref: "#/components/parameters/ImageId" }]
+      responses:
+        "302":
+          description: Redirect to the image (signed URL valid for 10 minutes)
+          headers:
+            Location: { schema: { type: string, format: uri } }
+            Cache-Control: { schema: { type: string, const: "private, max-age=300" } }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      operationId: deleteImage
+      summary: Delete an image (the uploader; admins once RBAC exists)
+      parameters: [{ $ref: "#/components/parameters/ImageId" }]
+      responses:
+        "204": { description: Record and stored file removed }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+components:
+  parameters:
+    PageId: { name: pageId, in: path, required: true, schema: { type: string, format: uuid } }
+    ImageId: { name: imageId, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties: { error: { type: string } }
+  schemas:
+    UploadRequest:
+      type: object
+      additionalProperties: false
+      required: [contentType, size]
+      properties:
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp, image/gif] }
+        size: { type: integer, minimum: 1, maximum: 5242880 }
+    UploadPermission:
+      type: object
+      required: [uploadKey, uploadUrl, method, headers, expiresAt]
+      properties:
+        uploadKey: { type: string, example: "pending/9f…/3c…/7a…" }
+        uploadUrl: { type: string, format: uri }
+        method: { type: string, const: PUT }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+          example: { Content-Type: image/png }
+        expiresAt: { type: string, format: date-time }
+    ConfirmRequest:
+      type: object
+      additionalProperties: false
+      required: [uploadKey, fileName]
+      properties:
+        uploadKey: { type: string }
+        fileName: { type: string, minLength: 1, maxLength: 255 }
+    Image:
+      type: object
+      required: [id, pageId, fileName, contentType, size, uploadedBy, createdAt, url]
+      properties:
+        id: { type: string, format: uuid }
+        pageId: { type: string, format: uuid }
+        fileName: { type: string }
+        contentType: { type: string }
+        size: { type: integer }
+        uploadedBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        url: { type: string, description: "Stable address to embed in page content: /api/images/{id}" }

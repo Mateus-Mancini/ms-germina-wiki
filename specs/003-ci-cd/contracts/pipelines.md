@@ -39,7 +39,7 @@ This is the interface between the repositories and GitHub Actions: what each wor
 
 | File | Trigger | Jobs | Touches production? |
 |---|---|---|---|
-| `.github/workflows/ci.yml` | `pull_request` to `main`, `workflow_call` | `lint-build` (required check): `npm ci`, `npm run lint`, `npm run build` (static export to `out/`) | No |
+| `.github/workflows/ci.yml` | `pull_request` to `main`, `workflow_call` | `lint-build` (required check): `npm ci`, `npm run typecheck`, `npm test`, `npm run build` (static build to `frontend/dist`) | No |
 | `.github/workflows/release.yml` | `push` to `main`, `workflow_dispatch` | `checks` (calls `ci.yml`) → `deploy` (env `production`, concurrency `production`): build → Firebase Hosting `live` channel | Yes |
 
 ### Environments and secrets
@@ -50,9 +50,9 @@ This is the interface between the repositories and GitHub Actions: what each wor
 
 ### Hosting config
 
-- `firebase.json`: `hosting.public = "out"`, `cleanUrls: true`
 - `.firebaserc`: default project `germinawiki`
-- `next.config.ts`: `output: "export"`, `images.unoptimized: true`
+- Build: `npm run build` (typecheck + `vite build`) → `frontend/dist` (since research R10; originally a Next.js static export to `out/`)
+- `firebase.json`: `hosting.public = "frontend/dist"`, `cleanUrls: true`, SPA rewrite `** → /index.html`
 
 ## Required status checks (branch protection on `main`)
 

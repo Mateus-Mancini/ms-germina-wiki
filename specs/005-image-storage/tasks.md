@@ -45,7 +45,7 @@ description: "Task list for 005-image-storage"
   - request → rejects disallowed types and sizes outside 1–5,242,880 (400), a missing page (404) and no user (401); returns the key `pending/{pageId}/{userId}/{uuid}` and a TTL of 10 min
   - confirm → foreign key prefix (403), missing object (404), HEAD type/size mismatch (409 + the object deleted), success (copy to `images/{uuid}`, delete pending, insert the row with the trimmed file name)
 - [X] T008 [P] [US1] `controller/ImageControllerTest.java` (`@WebMvcTest`): `POST …/uploads` 201/400/401/404 bodies; `POST …/images` 201/400/401/403/404/409; request validation (`fileName` 1–255, `contentType` enum, `size` range)
-- [ ] T009 [P] [US1] `ImageFlowIntegrationTest.java` (PostgreSQL + MinIO, a seeded user and page): presign → real HTTP PUT with the returned headers → confirm → row present; a PUT with a different Content-Type is rejected by storage; a confirm after uploading a different size → 409
+- [X] T009 [P] [US1] `ImageFlowIntegrationTest.java` (PostgreSQL + MinIO, a seeded user and page): presign → real HTTP PUT with the returned headers → confirm → row present; a PUT with a different Content-Type is rejected by storage; a confirm after uploading a different size → 409
 
 ### Implementation
 

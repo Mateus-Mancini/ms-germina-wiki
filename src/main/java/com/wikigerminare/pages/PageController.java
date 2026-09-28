@@ -2,6 +2,7 @@ package com.wikigerminare.pages;
 
 import com.wikigerminare.pages.dto.CreatePageRequest;
 import com.wikigerminare.pages.dto.PageResponse;
+import com.wikigerminare.pages.dto.UpdatePageRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,22 @@ public class PageController {
             @Valid @RequestBody CreatePageRequest request,
             Principal principal
     ) {
-        UUID createdBy = UUID.fromString(principal.getName());
+
+        if (principal == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+
+        UUID createdBy;
+
+        try {
+            createdBy = UUID.fromString(principal.getName());
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .build();
+        }
 
         PageResponse response = pageService.create(
                 request,
@@ -42,15 +58,70 @@ public class PageController {
     public ResponseEntity<PageResponse> getById(
             @PathVariable UUID id
     ) {
-        return ResponseEntity.ok(
-                pageService.getById(id)
-        );
+
+        PageResponse response = pageService.getById(id);
+
+        return ResponseEntity
+                .ok()
+                .eTag(pageService.createEtag(response))
+                .body(response);
     }
 
     @GetMapping
     public ResponseEntity<List<PageResponse>> list() {
+
         return ResponseEntity.ok(
                 pageService.list()
         );
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<PageResponse> update(
+            @PathVariable UUID id,
+            @RequestHeader(value = "If-Match", required = false)
+            String ifMatch,
+            @Valid @RequestBody UpdatePageRequest request,
+            Principal principal
+    ) {
+
+        if (principal == null) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+
+        UUID updatedBy;
+
+        try {
+            updatedBy = UUID.fromString(principal.getName());
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .build();
+        }
+
+        PageResponse response = pageService.update(
+                id,
+                request,
+                ifMatch,
+                updatedBy
+        );
+
+        return ResponseEntity
+                .ok()
+                .eTag(pageService.createEtag(response))
+                .body(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID id
+    ) {
+
+        pageService.delete(id);
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

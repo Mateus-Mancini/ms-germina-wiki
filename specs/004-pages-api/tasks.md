@@ -1,6 +1,6 @@
 # Tasks: pages-api
 
-**Input**: Design documents in `/specs/003-pages-api/`
+**Input**: Design documents in `/specs/004-pages-api/`
 
 **Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/pages-api.openapi.json`
 
@@ -12,7 +12,7 @@
 
 **Purpose**: Confirm the external database prerequisite without changing database objects.
 
-- [ ] T001 Verify the provisioned PostgreSQL `pages`, `folders`, and `users` schema, version column/default, and stated FK delete actions against `specs/003-pages-api/data-model.md`; record any discrepancy in `specs/003-pages-api/research.md`. Do not run DDL or migrations.
+- [ ] T001 Verify the provisioned PostgreSQL `pages`, `folders`, and `users` schema, version column/default, and stated FK delete actions against `specs/004-pages-api/data-model.md`; record any discrepancy in `specs/004-pages-api/research.md`. Do not run DDL or migrations.
 
 ---
 
@@ -100,8 +100,8 @@
 
 **Purpose**: Run the documented verification and close remaining contract gaps.
 
-- [ ] T025 Review `specs/003-pages-api/contracts/pages-api.openapi.json` against the implemented DTOs, headers, status codes, and nullability; update the contract only if implementation discrepancies reveal a documentation mismatch with `specs/003-pages-api/spec.md`.
-- [ ] T026 Run `./mvnw.cmd test` from the repository root and execute the applicable scenarios in `specs/003-pages-api/quickstart.md`; record any PostgreSQL-only checks blocked by unavailable provisioned database access.
+- [ ] T025 Review `specs/004-pages-api/contracts/pages-api.openapi.json` against the implemented DTOs, headers, status codes, and nullability; update the contract only if implementation discrepancies reveal a documentation mismatch with `specs/004-pages-api/spec.md`.
+- [ ] T026 Run `./mvnw.cmd test` from the repository root and execute the applicable scenarios in `specs/004-pages-api/quickstart.md`; record any PostgreSQL-only checks blocked by unavailable provisioned database access.
 
 ---
 

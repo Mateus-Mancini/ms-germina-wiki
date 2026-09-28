@@ -1,6 +1,6 @@
 # Feature Specification: API de Páginas Wiki
 
-**Feature Branch**: `003-pages-api` (diretório da especificação; branch não criada)
+**Feature Branch**: `004-pages-api` (diretório da especificação; branch não criada)
 
 **Created**: 2026-09-27
 

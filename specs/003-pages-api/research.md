@@ -68,3 +68,4 @@
 - Page folder is immutable after creation. No page move behavior is planned.
 - Authentication remains external; this feature only consumes the host-provided principal UUID.
 - Exact column metadata and FK delete actions remain environment facts to inspect before finalizing mappings and PostgreSQL tests; they do not authorize DDL or changes to other APIs.
+

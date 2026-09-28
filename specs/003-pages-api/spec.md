@@ -1,6 +1,6 @@
 # Feature Specification: API de Páginas Wiki
 
-**Feature Branch**: `002-pages-api` (diretório da especificação; branch não criada)
+**Feature Branch**: `003-pages-api` (diretório da especificação; branch não criada)
 
 **Created**: 2026-09-27
 
@@ -140,3 +140,4 @@ O DTO de criação contém `title`, `slug`, `content` e `folderId`; `slug` é ob
 - **Movimentação entre pastas**: `folderId` é imutável depois da criação.
 - **Slug**: cliente fornece slug obrigatório de 1-300 caracteres; a API não gera, deriva ou normaliza; unicidade já é garantida pelo PostgreSQL e duplicidade retorna `409`.
 - **`updatedBy`**: a resposta expõe o valor nullable armazenado. A spec não define quem o popula, então esta feature não inventa essa regra.
+

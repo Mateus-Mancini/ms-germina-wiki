@@ -1,8 +1,8 @@
 # Implementation Plan: pages-api
 
-**Branch**: `002-pages-api` (current feature branch) | **Date**: 2026-09-27 | **Spec**: [spec.md](spec.md)
+**Branch**: `003-pages-api` (current feature branch) | **Date**: 2026-09-27 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification in `specs/002-pages-api/spec.md`
+**Input**: Feature specification in `specs/003-pages-api/spec.md`
 
 ## Summagit ry
 
@@ -41,7 +41,7 @@ Add REST CRUD for Wiki pages, storing Markdown unchanged and referencing the exi
 - **Slug contract**: `slug VARCHAR(300) NOT NULL UNIQUE` has no default. The updated `spec.md` requires the client to send it on create, preserves it exactly, returns it, and forbids PATCH changes. Duplicate values return `409`; no slug generation or schema change is planned.
 - **Folder deletion effect**: `folder_id` is nullable and `ON DELETE SET NULL`. Creation still requires an existing folder and PATCH cannot change it; the spec now allows response `folderId` to be null after database-driven folder deletion. Do not block folder deletion or add application cascades.
 - **Database test gate**: PostgreSQL test/development environment with existing `pages`, `folders`, and `users` schema must be provisioned. No `DATABASE_URL` is available to this process and no `psql` client is installed; `.env` was not read.
-- **Branch gate**: Current branch is `002-pages-api`, satisfying the Constitution's feature-branch requirement for subsequent source changes.
+- **Branch gate**: Current branch is `003-pages-api`, satisfying the Constitution's feature-branch requirement for subsequent source changes.
 - **Constitution recordkeeping**: Normative Java 21 requirement matches the feature. Sync-impact/version/date metadata still describes the 2026-09-25 amendment; reconcile separately before integration. This plan does not edit the Constitution.
 
 ## Design and Implementation Sequence
@@ -74,7 +74,7 @@ Add REST CRUD for Wiki pages, storing Markdown unchanged and referencing the exi
 ### Documentation (this feature)
 
 ```text
-specs/002-pages-api/
+specs/003-pages-api/
 ├── plan.md
 ├── research.md
 ├── data-model.md
@@ -119,8 +119,9 @@ src/test/java/com/wikigerminare/
 - Any external writer that changes page content without advancing the same version can defeat lost-update protection; all page writers must follow the version discipline.
 - Optimistic-lock failures may occur at flush/commit and mark the transaction rollback-only. Current-version lookup must happen after rollback in a new transaction.
 - No PostgreSQL test service or page schema fixture exists locally. Integration and concurrent-write tests require a provisioned database with the supplied schema.
-- The current branch is `002-pages-api`; keep feature source changes on this branch.
+- The current branch is `003-pages-api`; keep feature source changes on this branch.
 
 ## Complexity Tracking
 
 No Constitution violations require justification. JPA `@Version` and HTTP conditional requests implement the explicit optimistic-locking requirement using existing mechanisms.
+

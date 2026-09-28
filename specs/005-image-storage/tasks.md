@@ -62,7 +62,7 @@ description: "Task list for 005-image-storage"
 
 - [X] T014 [P] [US2] Tests: service `imageRedirect` (404 for an unknown id, a presigned GET with a 10-min TTL); MVC `GET /api/images/{id}` → 302 with `Location` and `Cache-Control: private, max-age=300`, no auth required; integration: follow the redirect and download identical bytes
 - [X] T015 [US2] Implement `ImageService.imageRedirect` and `GET /api/images/{id}` (research R4)
-- [ ] T016 [US2] Extend `lambda/SnapStartPriming.java` to presign one dummy GET (no network) (research R9)
+- [X] T016 [US2] Extend `lambda/SnapStartPriming.java` to presign one dummy GET (no network) (research R9)
 
 ---
 

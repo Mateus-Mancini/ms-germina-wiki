@@ -17,13 +17,14 @@ The Spec Kit commands are installed for **GitHub Copilot** (`.github/skills/`, P
 | [001-backend-hosting](specs/001-backend-hosting/) | Production hosting, `/health` readiness, cold-start and cost guards |
 | [002-database-migrations](specs/002-database-migrations/) | Versioned schema (Flyway), tests on the real schema, safe production migrations |
 | [003-ci-cd](specs/003-ci-cd/) | PR checks and automatic releases (migrations, deploy, rollback) for API and web app |
+| [005-image-storage](specs/005-image-storage/) | Page images: direct uploads to private Cloudflare R2, stable redirect addresses, cleanup |
 
 ## Running locally
 
 Requires JDK 21 and Docker. Nothing local ever connects to the production database.
 
 ```bash
-./mvnw spring-boot:test-run   # API on http://localhost:8080 with a throwaway PostgreSQL (Testcontainers)
+./mvnw spring-boot:test-run   # API on http://localhost:8080 with throwaway PostgreSQL + MinIO (Testcontainers)
 curl localhost:8080/health    # {"status":"ready"}
 ```
 
@@ -52,6 +53,10 @@ scripts/smoke-lambda-package.sh                # pre-deploy smoke test of the La
 scripts/db-migrate.sh                          # rehearse | production | info (database migrations)
 docs/deployment.md                             # deploy, rollback, re-enable
 ```
+
+## Image storage
+
+Images go straight from the browser to a private Cloudflare R2 bucket (presigned URLs); `GET /api/images/{id}` redirects to a short-lived signed URL. Tests use MinIO. Setup and operations: [docs/image-storage.md](docs/image-storage.md).
 
 ## Database
 

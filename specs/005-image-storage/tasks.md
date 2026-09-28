@@ -92,7 +92,7 @@ description: "Task list for 005-image-storage"
 
 ## Phase 7: Polish
 
-- [ ] T026 [P] README: feature 005 row, storage section link; `docs/deployment.md`: the R2 parameters in the manual deploy command
+- [X] T026 [P] README: feature 005 row, storage section link; `docs/deployment.md`: the R2 parameters in the manual deploy command
 
 ## Dependencies
 

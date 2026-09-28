@@ -49,7 +49,8 @@ description: "Task list for 003-ci-cd"
 - [X] T010 [US2] BE: Create `.github/workflows/release.yml` (`push` to `main`, `workflow_dispatch` with input `simulate_failed_verify`):
   - job `checks` calls `ci.yml`
   - job `release` (environment `production`, `concurrency: production`, `permissions: id-token: write, contents: read`) runs: OIDC credentials → `DB_MIGRATE_CONFIRM=yes scripts/db-migrate.sh production` → record `live` version → `sam deploy --no-confirm-changeset --no-fail-on-empty-changeset` → verify `/health` (6 × 10 s) → on failure other than 429, `update-alias` back and fail → job summary with both versions
-- [ ] T011 [US2] Validate per quickstart §3 (merge → healthy release) and §4 (rollback drill via `workflow_dispatch`)
+- [X] T011 [US2] Validate per quickstart §3 (merge → healthy release) and §4 (rollback drill via `workflow_dispatch`)
+  - Release run 36360271170 (merge of #8): the first attempt failed at OIDC (sub-claim format, fixed in #9) with nothing deployed; the re-run succeeded end to end: migrations up to date, live 6 → 7, `/health` 200 ready on attempt 1, all 3 stack roles now carry the permissions boundary. Rollback drill run 36360889315 (`simulate_failed_verify`): verify failed after 6 × 404, the rollback step ran 1 s later, the run was marked failed, and production stayed healthy on version 7 (SC-008).
 
 ---
 
@@ -57,7 +58,8 @@ description: "Task list for 003-ci-cd"
 
 - [X] T012 [P] [US3] FE: Create `firebase.json` (`hosting.public: "out"`, `cleanUrls: true`, ignore patterns) and `.firebaserc` (default `germinawiki`)
 - [X] T013 [US3] FE: Create `.github/workflows/release.yml` (`push` to `main`, `workflow_dispatch`): `checks` calls `ci.yml` → `deploy` (environment `production`, `concurrency: production`): build, then `FirebaseExtended/action-hosting-deploy@v0` with `channelId: live`, `projectId: germinawiki`
-- [ ] T014 [US3] Validate per quickstart §6 (`https://germinawiki.web.app` serves the build)
+- [X] T014 [US3] Validate per quickstart §6 (`https://germinawiki.web.app` serves the build)
+  - Web app release run 36360280827: `lint-build` 23 s + deploy 55 s (SC-004); https://germinawiki.web.app returns 200.
 
 ---
 

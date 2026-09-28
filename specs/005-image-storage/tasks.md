@@ -29,7 +29,7 @@ description: "Task list for 005-image-storage"
 
 - [X] T004 Create `config/StorageProperties.java` (`@ConfigurationProperties("app.storage")`: accountId, bucket, accessKeyId, secretAccessKey, optional endpoint override for tests) and `config/StorageConfig.java` building the singleton `S3Client` and `S3Presigner` with `requestChecksumCalculation(WHEN_REQUIRED)`, `responseChecksumValidation(WHEN_REQUIRED)`, `chunkedEncodingEnabled(false)`, path-style access, region `auto`, and `UrlConnectionHttpClient` (research R2, R9)
 - [X] T005 Create the port `storage/ObjectStorage.java` (`presignPut(key, contentType, size, ttl)`, `presignGet(key, ttl)`, `head(key)` → `Optional<ObjectInfo>`, `copy(from, to)`, `delete(key)`) and its adapter `storage/R2ObjectStorage.java`
-- [ ] T006 Create `src/test/java/com/wikigerminare/StorageTestcontainersConfiguration.java`: a MinIO container, bucket creation, and `app.storage.*` pointing at it via a dynamic property registry
+- [X] T006 Create `src/test/java/com/wikigerminare/StorageTestcontainersConfiguration.java`: a MinIO container, bucket creation, and `app.storage.*` pointing at it via a dynamic property registry
 
 **Checkpoint**: the app starts with storage configured (tests use MinIO); `./mvnw test` is green
 

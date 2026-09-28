@@ -83,7 +83,7 @@ description: "Task list for 005-image-storage"
   - parameters `R2AccountId`, `R2Bucket`, `R2AccessKeyId` (NoEcho), `R2SecretAccessKey` (NoEcho) → `APP_STORAGE_*` env vars
   - a daily `ScheduleV2` on `ApiFunction` with input `{"source":"germinawiki.image-cleanup"}` and the permissions boundary
 - [X] T021 `.github/workflows/release.yml` (pass the four R2 parameters from the `production` environment), and add the R2 values to `docs/ci-cd.md` §2
-- [ ] T022 [P] `src/test/java/com/wikigerminare/R2LiveSmokeTest.java`, `@EnabledIfEnvironmentVariable(APP_STORAGE_ACCESS_KEY_ID)`: the full round trip against the configured bucket (quickstart §3)
+- [X] T022 [P] `src/test/java/com/wikigerminare/R2LiveSmokeTest.java`, `@EnabledIfEnvironmentVariable(APP_STORAGE_ACCESS_KEY_ID)`: the full round trip against the configured bucket (quickstart §3)
 - [ ] T023 [P] `docs/image-storage.md`: owner setup (Cloudflare account, `npx wrangler login`, bucket create, CORS from `infra/r2/cors.json`, lifecycle `pending/` 1 day, bucket-scoped R2 API token), secrets for `prod.env` and GitHub, operations (cleanup invocation, costs)
 - [ ] T024 Owner: R2 setup per `docs/image-storage.md`; run `R2LiveSmokeTest` locally against R2
 - [ ] T025 After merge: the release applies V2 and deploys; validate quickstart §3–§5 (401 before auth, 404 for an unknown image, cleanup `{"deleted":0}`, USD 0)

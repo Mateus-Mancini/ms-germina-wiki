@@ -2,13 +2,17 @@ package com.wikigerminare.folders.dto;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
 public class UpdateFolderRequest {
 
-    @Size(max = 150, message = "name must have at most 150 characters")
+    @Size(
+        max = 150,
+        message = "name must have at most 150 characters"
+    )
     private String name;
 
     private boolean nameProvided;
@@ -46,5 +50,14 @@ public class UpdateFolderRequest {
 
     public boolean isParentFolderIdProvided() {
         return parentFolderIdProvided;
+    }
+
+    @AssertTrue(message = "name must not be blank")
+    public boolean isNameValid() {
+        if (!nameProvided) {
+            return true;
+        }
+
+        return name != null && !name.isBlank();
     }
 }

@@ -34,3 +34,10 @@ build/
 .env
 .env.*
 !.env.example
+
+### AWS SAM ###
+.aws-sam/
+samconfig.local.toml
+
+### Python ###
+__pycache__/

@@ -1,0 +1,104 @@
+---
+
+description: "Task list for 002-database-migrations"
+---
+
+# Tasks: Database Migrations
+
+**Input**: Design documents from `/specs/002-database-migrations/`
+
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
+
+**Tests**: Included (constitution principle IV).
+
+**Organization**: Tasks are grouped by user story. Paths are relative to the repository root.
+
+## Format: `[ID] [P?] [Story] Description`
+
+---
+
+## Phase 1: Setup
+
+- [X] T001 Add `spring-boot-starter-flyway` and `org.flywaydb:flyway-database-postgresql` in **test** scope in `pom.xml` (research R3: never on the runtime classpath)
+- [X] T002 Add `flyway-maven-plugin` (Boot-managed version) in `pom.xml`, with plugin dependencies `flyway-database-postgresql` and the PostgreSQL driver, and fixed settings `cleanDisabled=true`, `outOfOrder=false`, `connectRetries=10` (contracts/migrations.md)
+- [X] T003 [P] Switch the Testcontainers image to `postgres:18-alpine` in `src/test/java/com/wikigerminare/TestcontainersConfiguration.java`, `src/test/java/com/wikigerminare/HealthIntegrationTest.java`, `src/test/java/com/wikigerminare/lambda/SnapStartPrimingTest.java` and `scripts/smoke-lambda-package.sh` (FR-007)
+
+---
+
+## Phase 2: Foundational
+
+- [X] T004 Create `src/main/resources/db/migration/V1__initial_schema.sql` from the team's `db-script`, SQL verbatim plus a header comment crediting the original script. Commit with `Co-authored-by: CamillaMorenoA <178440498+CamillaMorenoA@users.noreply.github.com>` (FR-001, FR-002, FR-012)
+
+**Checkpoint**: `./mvnw test` migrates every Testcontainers database to V1
+
+---
+
+## Phase 3: User Story 2 - Tests run against the real schema (Priority: P1) 🎯 MVP
+
+**Goal**: every DB-backed test starts from the migrated schema on PostgreSQL 18
+
+**Independent Test**: quickstart §1, including the temporary broken migration
+
+- [X] T005 [US2] Write `src/test/java/com/wikigerminare/SchemaMigrationTest.java` (`@SpringBootTest` + Testcontainers). It asserts the catalog in data-model.md: 8 tables, enum `user_role` (`admin`,`member`) and `comment_status` (`OPEN`,`RESOLVED`), extension `pgcrypto`, the 4 `*_updated_at` triggers, the GIN index `idx_pages_full_text_search`, and `flyway_schema_history` recording version `1` with `success = true` and no failed migrations (originally "latest version 1"; changed after the 003 rehearsal drill showed that pinning the latest version breaks every future migration PR)
+- [X] T006 [US2] Run quickstart §1 (full suite green; temporary `V999__broken.sql` fails the suite, then removed) and §2 (local run migrates); record the results in the PR
+  - Results (2026-09-27): full suite green on postgres:18-alpine; a temporary `V999__broken.sql` made all `SchemaMigrationTest` cases error with `FlywayMigrateException`. Via `flyway-maven-plugin` on a local PG18: V1 applied; a V2 that creates a table and then fails left 0 tables and history `1:true` (atomic, FR-006); a re-run reported "up to date" in 5 s (FR-004, SC-002).
+
+**Checkpoint**: MVP: the schema is versioned, and every test uses it
+
+---
+
+## Phase 4: User Story 1 - Production has the team's schema, applied safely (Priority: P1)
+
+**Goal**: V1 is rehearsed on a disposable Neon branch, then applied to production from `main`
+
+**Independent Test**: quickstart §3–§4 plus the catalog comparison
+
+- [X] T007 [US1] Create `scripts/db-migrate.sh` with the `rehearse`, `production` and `info` subcommands per contracts/migrations.md:
+  - derive the direct URL by stripping `-pooler`
+  - `rehearse` creates a Neon branch with `--expires-at now+1h`, runs `flyway info/migrate/info` against its direct endpoint, and deletes the branch on exit
+  - `production` checks that it's on `main`, the tree is clean and `HEAD == origin/main`, shows `info`, and requires `yes` (or `DB_MIGRATE_CONFIRM=yes`)
+  - secrets are never echoed
+- [X] T008 [US1] Add `NEON_PROJECT_ID` to the owner's secrets file (owner action; documented in `docs/deployment.md` prerequisites)
+  - Done by the owner (2026-09-27).
+  - Project id is `rapid-surf-40273289` (org `org-wispy-paper-91429146`); the rehearsal (T009) passed it inline.
+- [X] T009 [US1] Rehearse V1 per quickstart §3 and record the output in the PR
+  - Rehearsed 2026-09-27 on a disposable branch of Neon project `rapid-surf-40273289` (PG 18.6): V1 validated and applied in 0.8 s ("now at version v1"), branch deleted on exit, production untouched (still Empty Schema / V1 Pending).
+- [X] T010 [US1] **After this feature is merged**: apply V1 to production from `main` per quickstart §4, re-run to prove idempotency (SC-002), and compare the production catalog with data-model.md (SC-001)
+  - Applied 2026-09-27 23:19 UTC from `main` (merge of #6): V1 applied in 1.3 s; a second run reported "up to date" (SC-002). Catalog comparison: 8 tables + `flyway_schema_history`, enums `comment_status` (OPEN,RESOLVED) and `user_role` (admin,member), `pgcrypto`, 4 `updated_at` triggers, 31 indexes (18 `idx_*`, 5 unique, 8 PK), matching the local PG18 result (SC-001).
+
+**Checkpoint**: production is at schema version 1
+
+---
+
+## Phase 5: User Story 3 - The team can evolve the schema safely (Priority: P2)
+
+**Goal**: a documented, enforced convention for new migrations
+
+**Independent Test**: quickstart §5 (branch guard, checksum guard)
+
+- [X] T011 [P] [US3] Write `docs/database-migrations.md`: naming convention, immutability rule, add → test → rehearse → PR → owner applies from `main`, what to do when a migration fails, and "fix forward" instead of editing (FR-011)
+- [X] T012 [US3] Validate the guards per quickstart §5: production refused from a feature branch; an edited V1 rejected by checksum on a rehearsal branch (SC-004). This needs T010 done, so that V1 is recorded on `main`
+  - Checksum guard: an edited comment in V1, rehearsed against a copy of production, was rejected (`Migration checksum mismatch for migration version 1`, exit 1, no change; rehearsal branch deleted). Branch guard: `production` from a non-main branch refused (exit 1) (SC-004, FR-005, FR-009).
+
+---
+
+## Phase 6: Polish
+
+- [X] T013 [P] Update `README.md` (layout, the migrations link) and `docs/deployment.md` (the `NEON_PROJECT_ID` prerequisite, running migrations before deploying code that needs them)
+- [X] T014 Verify quickstart §6: the Lambda zip contains no Flyway, the smoke test passes, and the API's `/health` is unaffected (FR-008, SC-007)
+  - Verified 2026-09-27: 0 Flyway jars in the Lambda zip (clean build), smoke test `SMOKE OK`, all 7 test suites green. Found and fixed a stale `V999__broken.sql` in `target/classes` → all build commands now use `clean package`.
+
+---
+
+## Dependencies & Execution Order
+
+- Setup → Foundational (V1) → US2 → US1 → US3 → Polish
+- **T010 and T012 run after the PR merges**, because of the main-only rule (clarification). All other tasks happen on the feature branch
+- T003, T011 and T013 touch separate files and can run in parallel with neighbouring tasks
+
+## Implementation Strategy
+
+1. T001–T006: versioned schema, and tests on it (MVP, fully local)
+2. T007–T009: script and rehearsal on a Neon branch (no production change)
+3. Merge the PR → T010 applies to production → T012 guard checks
+4. T011, T013, T014: docs and final verification

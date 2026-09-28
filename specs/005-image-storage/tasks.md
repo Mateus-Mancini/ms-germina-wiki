@@ -73,7 +73,7 @@ description: "Task list for 005-image-storage"
   - MVC `GET /api/pages/{pageId}/images` and `DELETE /api/images/{id}`
   - integration: delete removes the row and the object; deleting a **page** queues its image keys (V2 trigger); the cleanup deletes the queued objects and the queue rows
 - [X] T018 [US3] Implement `ImageService.list` and `delete` (`canDelete`: the uploader; the admin hook is noted for RBAC) and their endpoints
-- [ ] T019 [US3] Implement `service/ImageCleanupService.java` (process the queue: delete the object, then the row; idempotent) and route the payload `{"source":"germinawiki.image-cleanup"}` in `lambda/StreamLambdaHandler.java` to it, returning `{"deleted":N}` (research R5)
+- [X] T019 [US3] Implement `service/ImageCleanupService.java` (process the queue: delete the object, then the row; idempotent) and route the payload `{"source":"germinawiki.image-cleanup"}` in `lambda/StreamLambdaHandler.java` to it, returning `{"deleted":N}` (research R5)
 
 ---
 

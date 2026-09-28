@@ -1,12 +1,6 @@
 package com.wikigerminare.pages;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -16,22 +10,21 @@ import java.util.UUID;
 public class Page {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false)
+    @GeneratedValue
     private UUID id;
 
-    @Column(name = "title", nullable = false, length = 255)
+    @Column(nullable = false, length = 255)
     private String title;
 
-    @Column(name = "slug", nullable = false, unique = true, length = 300)
+    @Column(nullable = false, length = 300, unique = true)
     private String slug;
 
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
-    private String content;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content = "";
 
     @Version
-    @Column(name = "version", nullable = false)
-    private Integer version;
+    @Column(nullable = false)
+    private Integer version = 1;
 
     @Column(name = "folder_id")
     private UUID folderId;
@@ -47,9 +40,6 @@ public class Page {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    public Page() {
-    }
 
     public UUID getId() {
         return id;

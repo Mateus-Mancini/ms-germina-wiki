@@ -19,7 +19,7 @@ description: "Task list for 003-ci-cd"
 
 ## Phase 1: Setup
 
-- [X] T001 BE: Create `infra/github-oidc.yaml` (CloudFormation): GitHub OIDC provider, role `germinawiki-github-deploy` trusting only `repo:Mateus-Mancini/ms-germina-wiki:environment:production` (`aud` sts.amazonaws.com), least-privilege policy per research R2, output `RoleArn`
+- [X] T001 BE: Create `infra/github-oidc.yaml` (CloudFormation): GitHub OIDC provider, role `germinawiki-github-deploy` trusting only `repo:Mateus-Mancini@115586427/ms-germina-wiki@1365859536:environment:production` (`aud` sts.amazonaws.com), least-privilege policy per research R2, output `RoleArn`
 - [X] T002 BE: Change `scripts/db-migrate.sh rehearse` to take the role, password and database from `neonctl connection-string` of the rehearsal branch, so rehearsal needs only `NEON_API_KEY` or a local `neonctl` login, plus `NEON_PROJECT_ID` (research R4)
 
 ---
@@ -28,7 +28,7 @@ description: "Task list for 003-ci-cd"
 
 - [X] T003 BE: Write `docs/ci-cd.md` with the one-time setup as commands: deploy `infra/github-oidc.yaml`; create environments `production` (main-only) and `neon-rehearsal` (owner reviewer) with their secrets and variables via `gh`; Firebase `hosting:github` setup; required checks via `gh api` (contracts/pipelines.md)
 - [X] T004 Owner runs the `docs/ci-cd.md` setup (AWS bootstrap stack, GitHub environments, secrets and variables, Firebase service account)
-  - Verified 2026-09-28: bootstrap stack `germinawiki-github-oidc` CREATE_COMPLETE (trust subject `repo:Mateus-Mancini/ms-germina-wiki:environment:production`); backend environments `production` (main-only; DB secrets; role, email and origin variables) and `neon-rehearsal` (owner reviewer; Neon key and project); web app environment `production` (main-only) holding the Hosting-only service-account key, with no repo-level secrets. Created manually (`firebase init hosting:github` couldn't access the repo).
+  - Verified 2026-09-28: bootstrap stack `germinawiki-github-oidc` CREATE_COMPLETE (trust subject `repo:Mateus-Mancini@115586427/ms-germina-wiki@1365859536:environment:production`); backend environments `production` (main-only; DB secrets; role, email and origin variables) and `neon-rehearsal` (owner reviewer; Neon key and project); web app environment `production` (main-only) holding the Hosting-only service-account key, with no repo-level secrets. Created manually (`firebase init hosting:github` couldn't access the repo).
 
 **Checkpoint**: both repos have environments and secrets; the AWS deploy role exists
 
@@ -49,7 +49,8 @@ description: "Task list for 003-ci-cd"
 - [X] T010 [US2] BE: Create `.github/workflows/release.yml` (`push` to `main`, `workflow_dispatch` with input `simulate_failed_verify`):
   - job `checks` calls `ci.yml`
   - job `release` (environment `production`, `concurrency: production`, `permissions: id-token: write, contents: read`) runs: OIDC credentials → `DB_MIGRATE_CONFIRM=yes scripts/db-migrate.sh production` → record `live` version → `sam deploy --no-confirm-changeset --no-fail-on-empty-changeset` → verify `/health` (6 × 10 s) → on failure other than 429, `update-alias` back and fail → job summary with both versions
-- [ ] T011 [US2] Validate per quickstart §3 (merge → healthy release) and §4 (rollback drill via `workflow_dispatch`)
+- [X] T011 [US2] Validate per quickstart §3 (merge → healthy release) and §4 (rollback drill via `workflow_dispatch`)
+  - Release run 36360271170 (merge of #8): the first attempt failed at OIDC (sub-claim format, fixed in #9) with nothing deployed; the re-run succeeded end to end: migrations up to date, live 6 → 7, `/health` 200 ready on attempt 1, all 3 stack roles now carry the permissions boundary. Rollback drill run 36360889315 (`simulate_failed_verify`): verify failed after 6 × 404, the rollback step ran 1 s later, the run was marked failed, and production stayed healthy on version 7 (SC-008).
 
 ---
 
@@ -57,7 +58,8 @@ description: "Task list for 003-ci-cd"
 
 - [X] T012 [P] [US3] FE: Create `firebase.json` (`hosting.public: "out"`, `cleanUrls: true`, ignore patterns) and `.firebaserc` (default `germinawiki`)
 - [X] T013 [US3] FE: Create `.github/workflows/release.yml` (`push` to `main`, `workflow_dispatch`): `checks` calls `ci.yml` → `deploy` (environment `production`, `concurrency: production`): build, then `FirebaseExtended/action-hosting-deploy@v0` with `channelId: live`, `projectId: germinawiki`
-- [ ] T014 [US3] Validate per quickstart §6 (`https://germinawiki.web.app` serves the build)
+- [X] T014 [US3] Validate per quickstart §6 (`https://germinawiki.web.app` serves the build)
+  - Web app release run 36360280827: `lint-build` 23 s + deploy 55 s (SC-004); https://germinawiki.web.app returns 200.
 
 ---
 

@@ -11,8 +11,9 @@
 ## R2. Backend cloud credentials (FR-008, SC-005)
 
 - **Decision**: **GitHub OIDC → AWS IAM role** (`aws-actions/configure-aws-credentials@v4`, `role-to-assume`).
-  - The role's trust policy accepts only tokens with `aud = sts.amazonaws.com` and `sub = repo:Mateus-Mancini/ms-germina-wiki:environment:production`.
+  - The role's trust policy accepts only tokens with `aud = sts.amazonaws.com` and `sub = repo:Mateus-Mancini@115586427/ms-germina-wiki@1365859536:environment:production`.
   - The GitHub **environment `production`** is restricted to the `main` branch, so no PR or other branch can obtain AWS credentials.
+  - *Found at the first release*: GitHub's `sub` claim includes the immutable owner and repository ids (`owner@id/repo@id`). The name-only subject was rejected (`AccessDenied`, confirmed in CloudTrail). The id-based subject is also safer: a renamed or re-created repository can't inherit the trust.
   - Sessions last 1 h. No AWS keys exist anywhere.
 - **Least privilege**, as a customer-managed policy in a bootstrap stack (`infra/github-oidc.yaml`):
   - CloudFormation on `stack/ms-germina-wiki/*`, plus `CreateChangeSet` on the SAM transform

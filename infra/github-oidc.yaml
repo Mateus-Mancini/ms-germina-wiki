@@ -5,9 +5,12 @@ Description: >-
   Short-lived OIDC credentials only; no access keys.
 
 Parameters:
+  # GitHub's OIDC 'sub' claim identifies owner and repository by name AND immutable id
+  # (owner@owner_id/repo@repo_id), so a renamed or re-created repository can't inherit this trust.
+  # Ids: gh api repos/Mateus-Mancini/ms-germina-wiki --jq '"\(.owner.id) \(.id)"'
   GitHubRepo:
     Type: String
-    Default: Mateus-Mancini/ms-germina-wiki
+    Default: Mateus-Mancini@115586427/ms-germina-wiki@1365859536
   GitHubEnvironment:
     Type: String
     Default: production

@@ -21,7 +21,7 @@ This is the interface between the repositories and GitHub Actions: what each wor
 ### AWS trust (`infra/github-oidc.yaml`, deployed once by the owner)
 
 - The OIDC provider is `token.actions.githubusercontent.com`.
-- The role `germinawiki-github-deploy` trusts `sub = repo:Mateus-Mancini/ms-germina-wiki:environment:production` and `aud = sts.amazonaws.com`.
+- The role `germinawiki-github-deploy` trusts `sub = repo:Mateus-Mancini@115586427/ms-germina-wiki@1365859536:environment:production` and `aud = sts.amazonaws.com`.
 - Its permissions are least-privilege, as listed in research R2. The stack outputs `RoleArn`, which becomes the variable `AWS_ROLE_ARN`.
 
 ### Release outcomes (job summary)

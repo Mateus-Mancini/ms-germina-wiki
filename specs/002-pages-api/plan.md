@@ -4,7 +4,7 @@
 
 **Input**: Feature specification in `specs/002-pages-api/spec.md`
 
-## Summary
+## Summagit ry
 
 Add REST CRUD for Wiki pages, storing Markdown unchanged and referencing the existing folders table by UUID. Accept a client-provided unique slug unchanged at creation and return it in page responses. Map `version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0)` with JPA `@Version Integer`, without manual increments or schema changes. Expose strong per-page ETags and require `If-Match` on PATCH; translate stale updates to `412` with the current version after rollback.
 

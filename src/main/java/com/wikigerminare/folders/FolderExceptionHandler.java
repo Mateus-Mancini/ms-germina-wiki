@@ -11,7 +11,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestControllerAdvice
+@RestControllerAdvice(assignableTypes = FolderController.class)
 public class FolderExceptionHandler {
 
     @ExceptionHandler(FolderNotFoundException.class)
@@ -20,6 +20,15 @@ public class FolderExceptionHandler {
     ) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
+                .body(errorBody(exception.getMessage()));
+    }
+
+    @ExceptionHandler(FolderValidationException.class)
+    public ResponseEntity<Map<String, String>> handleValidationException(
+            FolderValidationException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
                 .body(errorBody(exception.getMessage()));
     }
 
@@ -33,11 +42,11 @@ public class FolderExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(
+    public ResponseEntity<Map<String, String>> handleBeanValidation(
             MethodArgumentNotValidException exception
     ) {
         String message = exception.getBindingResult()
-                .getFieldErrors()
+                .getAllErrors()
                 .stream()
                 .findFirst()
                 .map(error -> error.getDefaultMessage())
@@ -52,7 +61,9 @@ public class FolderExceptionHandler {
     public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(
             DataIntegrityViolationException exception
     ) {
-        if (isForeignKeyViolation(exception)) {
+        String sqlState = findSqlState(exception);
+
+        if ("23503".equals(sqlState)) {
             return ResponseEntity
                     .status(HttpStatus.CONFLICT)
                     .body(errorBody(
@@ -60,23 +71,31 @@ public class FolderExceptionHandler {
                     ));
         }
 
+        if ("23505".equals(sqlState)) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(errorBody(
+                            "A folder with this name already exists in the same parent"
+                    ));
+        }
+
         throw exception;
     }
 
-    private boolean isForeignKeyViolation(Throwable exception) {
+    private String findSqlState(Throwable exception) {
 
         Throwable current = exception;
 
         while (current != null) {
 
             if (current instanceof SQLException sqlException) {
-                return "23503".equals(sqlException.getSQLState());
+                return sqlException.getSQLState();
             }
 
             current = current.getCause();
         }
 
-        return false;
+        return null;
     }
 
     private Map<String, String> errorBody(String message) {

@@ -1,8 +1,5 @@
 package com.wikigerminare.pages.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
 public class UpdatePageRequest {
 
     private String title;

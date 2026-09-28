@@ -15,6 +15,8 @@ import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.wikigerminare.dto.ReadinessStatus;
+import com.amazonaws.serverless.proxy.model.HttpApiV2ProxyRequest;
+import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler;
 
 /**
  * Warms the request path right before the SnapStart snapshot, so class loading and JIT happen when a

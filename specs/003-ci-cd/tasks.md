@@ -40,7 +40,8 @@ description: "Task list for 003-ci-cd"
 - [X] T006 [US1] BE: Add job `rehearse-migrations` to `ci.yml`: runs only when `src/main/resources/db/migration/**` changed (paths filter via `git diff` against the base), environment `neon-rehearsal`, runs `scripts/db-migrate.sh rehearse` with `NEON_API_KEY`
 - [X] T007 [P] [US1] FE: Read the Next.js 16 static-export guide in `node_modules/next/dist/docs/`, then set `output: "export"` and `images: { unoptimized: true }` in `next.config.ts` (only those two keys)
 - [X] T008 [P] [US1] FE: Create `.github/workflows/ci.yml` (`pull_request`, `workflow_call`): job `lint-build` (Node 22): `npm ci`, `npm run lint`, `npm run build`, and assert `out/index.html` exists
-- [ ] T009 [US1] Owner makes `build-test-package` (BE) and `lint-build` (FE) required checks on `main` (command in `docs/ci-cd.md`); validate per quickstart §1
+- [X] T009 [US1] Owner makes `build-test-package` (BE) and `lint-build` (FE) required checks on `main` (command in `docs/ci-cd.md`); validate per quickstart §1
+  - Done by the owner (2026-09-28): `main` requires `build-test-package` (backend) and `lint-build` (web app), plus 1 approving review.
 
 ---
 
@@ -67,7 +68,8 @@ description: "Task list for 003-ci-cd"
 
 - [X] T015 [P] BE: Update `README.md` (CI badge, pipelines section) and `docs/deployment.md` (releases are automatic on merge; manual deploy is the fallback); add a backward-compatible-migrations rule to `docs/database-migrations.md` (spec edge case: rollback restores code, not schema)
 - [X] T016 [P] FE: Add a short "Deploy" section to the web app `README.md` pointing to the pipelines and `docs/ci-cd.md` in the backend repo
-- [ ] T017 Validate quickstart §2 (gated rehearsal), §7 (credentials) and §8 (cost)
+- [X] T017 Validate quickstart §2 (gated rehearsal), §7 (credentials) and §8 (cost)
+  - §2: drill PR #10 (never merged) paused `rehearse-migrations` for owner approval; once approved, it migrated a disposable Neon copy v1 → v2 and deleted it; production stayed at v1. The drill also exposed a test pinning the latest schema version, which would have failed every migration PR (fixed in #11). §7: no repo-level secrets in either repo, 0 access keys for `mateus-admin` and root, deploy trust bound to the immutable-id subject. §8: both budgets show USD 0.00 actual spend; the release after #9 was a no-op thanks to reproducible builds ("No changes to deploy").
 
 ---
 

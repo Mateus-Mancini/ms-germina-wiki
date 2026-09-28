@@ -10,6 +10,12 @@
 
 > Numbering note: `004` is left for the folders API (PR #12), per review.
 
+## Clarifications
+
+### Session 2026-09-28
+
+- Q: How should readers' browsers load images? → A: Private bucket plus an API redirect. The stable address is an API URL that answers with a redirect to a short-lived signed storage URL. Deleting an image breaks its address immediately.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A student adds an image to a page (Priority: P1)
@@ -40,7 +46,7 @@ Anyone reading a wiki page sees its images load quickly. The addresses stored in
 
 **Acceptance Scenarios**:
 
-1. **Given** an image recorded for a page, **When** a browser requests its stable address, **Then** the image is displayed.
+1. **Given** an image recorded for a page, **When** a browser requests its stable address, **Then** it's redirected to a short-lived storage URL and the image is displayed.
 2. **Given** the stable address saved in a page's content, **When** the page is read days later, **Then** the image still displays.
 3. **Given** an address of an image that was deleted, or never existed, **When** it's requested, **Then** a not-found response is returned.
 
@@ -80,7 +86,7 @@ An editor lists a page's images and removes one that's no longer needed. The fil
 - **FR-003**: An upload permission MUST be limited to one generated object name, the declared content type and the declared size, and MUST expire within 10 minutes.
 - **FR-004**: Allowed image types MUST be JPEG, PNG, WebP and GIF, with a maximum size of 5 MB per image.
 - **FR-005**: The API MUST record an image for a page only after verifying the stored file exists and matches the approved type and size.
-- **FR-006**: Every recorded image MUST have a stable address that keeps working for as long as the image exists, suitable for embedding in page content.
+- **FR-006**: Every recorded image MUST have a stable address that keeps working for as long as the image exists, suitable for embedding in page content. The address is an API URL that redirects the browser to a short-lived signed storage URL (valid at most 10 minutes). The storage bucket itself MUST NOT be publicly readable.
 - **FR-007**: The API MUST list a page's images and MUST allow the uploader or an admin to delete one, removing both the record and the stored file.
 - **FR-008**: Stored files not confirmed within 24 hours MUST be removed automatically.
 - **FR-009**: Files of images whose records were removed by a page deletion MUST NOT remain in storage indefinitely.
@@ -105,6 +111,7 @@ An editor lists a page's images and removes one that's no longer needed. The fil
 - **SC-004**: Unconfirmed uploads are gone from storage within 48 hours in 100% of cases.
 - **SC-005**: Storage adds USD 0.00 to the monthly bill at the expected load (≤ 15 users, ≤ 2 GB of images).
 - **SC-006**: No image byte passes through the API (verifiable from the API's request logs and payload sizes).
+- **SC-007**: When the API is warm, an image address resolves to a displayable image in under 1 second. After idle, the first image resolves within the API's cold-start target (under 3 seconds).
 
 ## Assumptions
 

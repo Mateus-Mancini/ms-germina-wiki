@@ -1,12 +1,13 @@
 <!--
 Sync Impact Report
-- Version change: scaffold/unversioned -> 1.0.0
+- Version change: 1.0.0 -> 1.0.1
 - Modified principles: template principles -> I. Especificação como fonte de verdade;
   II. Arquitetura em camadas; III. Contratos REST e DTOs; IV. Testes automatizados;
   V. Simplicidade, consistência e manutenibilidade
 - Added sections: Restrições técnicas e de negócio; Fluxo de desenvolvimento e qualidade
 - Removed sections: none (template scaffold replaced with project-specific content)
 - Follow-up TODOs: RATIFICATION_DATE requires confirmation of the original adoption date.
+- Technical constraint corrected from Kotlin to Java 21 to match the repository baseline.
 -->
 
 # GerminaWiki Constitution
@@ -55,7 +56,7 @@ e complexidade sem necessidade clara MUST ser evitadas.
 ## Restrições técnicas e de negócio
 
 O GerminaWiki é uma API desenvolvida por estudantes para fornecer o backend de uma
-aplicação web no formato de Wiki sobre a escola. O backend MUST utilizar Kotlin, Spring
+aplicação web no formato de Wiki sobre a escola. O backend MUST utilizar Java 21, Spring
 Boot, PostgreSQL, APIs HTTP REST e DTOs para entrada e saída. Novas tecnologias ou
 bibliotecas MUST ser adicionadas somente quando necessárias para atender a um requisito
 ou resolver um problema técnico identificado.
@@ -103,5 +104,5 @@ introduzida MUST possuir justificativa. A Constitution MUST permanecer estável 
 regras só devem ser adicionadas quando representarem uma necessidade recorrente ou um
 princípio importante para a evolução do GerminaWiki.
 
-**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): confirmar data de adoção
-original | **Last Amended**: 2026-09-25
+**Version**: 1.0.1 | **Ratified**: TODO(RATIFICATION_DATE): confirmar data de adoção
+original | **Last Amended**: 2026-09-28

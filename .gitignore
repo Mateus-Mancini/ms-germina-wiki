@@ -1,5 +1,8 @@
 HELP.md
 target/
+*.class
+*.jar
+.gradle/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

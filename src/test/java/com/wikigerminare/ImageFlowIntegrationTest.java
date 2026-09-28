@@ -1,6 +1,8 @@
 package com.wikigerminare;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,6 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.jayway.jsonpath.JsonPath;
 import com.wikigerminare.config.StorageProperties;
+import com.wikigerminare.service.ImageCleanupService;
 import com.wikigerminare.storage.ObjectStorage;
 
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -55,6 +58,9 @@ class ImageFlowIntegrationTest {
 
 	@Autowired
 	private StorageProperties storageProperties;
+
+	@Autowired
+	private ImageCleanupService cleanup;
 
 	private UUID userId;
 
@@ -124,6 +130,71 @@ class ImageFlowIntegrationTest {
 		assertThat(storage.head(key)).isEmpty();
 		assertThat(jdbc.queryForObject("SELECT count(*) FROM page_images WHERE page_id = ?", Integer.class, pageId))
 			.isZero();
+	}
+
+	@Test
+	void theStableAddressRedirectsToTheStoredBytes() throws Exception {
+		UUID imageId = uploadAndConfirm();
+
+		String location = mvc.perform(get("/api/images/{imageId}", imageId))
+			.andExpect(status().isFound())
+			.andReturn()
+			.getResponse()
+			.getHeader("Location");
+
+		HttpResponse<byte[]> image = http.send(HttpRequest.newBuilder(URI.create(location)).GET().build(),
+				HttpResponse.BodyHandlers.ofByteArray());
+		assertThat(image.statusCode()).isEqualTo(200);
+		assertThat(image.body()).isEqualTo(PNG);
+	}
+
+	@Test
+	void deletingAnImageRemovesTheRowTheObjectAndItsAddress() throws Exception {
+		UUID imageId = uploadAndConfirm();
+		String objectKey = objectKeyOf(imageId);
+
+		mvc.perform(delete("/api/images/{imageId}", imageId).principal(principal)).andExpect(status().isNoContent());
+
+		assertThat(storage.head(objectKey)).isEmpty();
+		mvc.perform(get("/api/images/{imageId}", imageId)).andExpect(status().isNotFound());
+		assertThat(queued()).doesNotContain(objectKey);
+	}
+
+	@Test
+	void deletingAPageQueuesItsImagesAndTheDailyCleanupRemovesThem() throws Exception {
+		String objectKey = objectKeyOf(uploadAndConfirm());
+
+		jdbc.update("DELETE FROM pages WHERE id = ?", pageId);
+		assertThat(queued()).contains(objectKey);
+		assertThat(storage.head(objectKey)).as("object still stored until cleanup").isPresent();
+
+		assertThat(cleanup.run()).isGreaterThanOrEqualTo(1);
+
+		assertThat(storage.head(objectKey)).isEmpty();
+		assertThat(queued()).doesNotContain(objectKey);
+	}
+
+	private UUID uploadAndConfirm() throws Exception {
+		String permission = requestUpload("image/png", PNG.length);
+		String key = JsonPath.read(permission, "$.uploadKey");
+		assertThat(putBytes(URI.create(JsonPath.read(permission, "$.uploadUrl")), "image/png", PNG)).isEqualTo(200);
+		String image = mvc
+			.perform(post("/api/pages/{pageId}/images", pageId).principal(principal)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"uploadKey\":\"" + key + "\",\"fileName\":\"a.png\"}"))
+			.andExpect(status().isCreated())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+		return UUID.fromString(JsonPath.read(image, "$.id"));
+	}
+
+	private String objectKeyOf(UUID imageId) {
+		return jdbc.queryForObject("SELECT file_url FROM page_images WHERE id = ?", String.class, imageId);
+	}
+
+	private java.util.List<String> queued() {
+		return jdbc.queryForList("SELECT object_key FROM image_object_deletions", String.class);
 	}
 
 	private String requestUpload(String contentType, int size) throws Exception {

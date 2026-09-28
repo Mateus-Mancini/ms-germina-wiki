@@ -177,6 +177,62 @@ class ImageServiceTest {
 
 	}
 
+	@Nested
+	class ReadAndManage {
+
+		private final UUID imageId = UUID.randomUUID();
+
+		private final PageImage image = new PageImage(imageId, pageId, "a.png", "images/" + imageId, "image/png", 10,
+				userId, NOW);
+
+		@BeforeEach
+		void recorded() {
+			when(repository.findById(imageId)).thenReturn(Optional.of(image));
+			storage.objects.put(image.objectKey(), new ObjectStorage.ObjectInfo("image/png", 10));
+		}
+
+		@Test
+		void redirectsToAPresignedGetValidForTenMinutes() {
+			assertThat(service.imageRedirect(imageId).toString())
+				.isEqualTo("https://storage.example/images/" + imageId + "?signed-get&ttl=PT10M");
+		}
+
+		@Test
+		void unknownImagesAreNotFound() {
+			UUID unknown = UUID.randomUUID();
+			when(repository.findById(unknown)).thenReturn(Optional.empty());
+
+			assertThatThrownBy(() -> service.imageRedirect(unknown)).isInstanceOf(ResourceNotFoundException.class);
+			assertThatThrownBy(() -> service.delete(unknown, userId)).isInstanceOf(ResourceNotFoundException.class);
+		}
+
+		@Test
+		void listsAPagesImagesAndRequiresThePage() {
+			when(repository.findByPage(pageId)).thenReturn(java.util.List.of(image));
+
+			assertThat(service.list(pageId)).extracting("id").containsExactly(imageId);
+			assertThatThrownBy(() -> service.list(UUID.randomUUID())).isInstanceOf(ResourceNotFoundException.class);
+		}
+
+		@Test
+		void theUploaderDeletesTheRecordAndTheStoredFile() {
+			service.delete(imageId, userId);
+
+			verify(repository).delete(imageId);
+			verify(repository).dequeue(image.objectKey());
+			assertThat(storage.objects).doesNotContainKey(image.objectKey());
+		}
+
+		@Test
+		void otherUsersMayNotDeleteAndAnonymousUsersMustSignIn() {
+			assertThatThrownBy(() -> service.delete(imageId, UUID.randomUUID())).isInstanceOf(ForbiddenException.class);
+			assertThatThrownBy(() -> service.delete(imageId, null)).isInstanceOf(UnauthenticatedException.class);
+			verify(repository, never()).delete(any());
+			assertThat(storage.objects).containsKey(image.objectKey());
+		}
+
+	}
+
 	/**
 	 * In-memory ObjectStorage.
 	 */

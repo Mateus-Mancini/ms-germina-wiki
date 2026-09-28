@@ -1,7 +1,9 @@
 package com.wikigerminare.service;
 
+import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -37,6 +39,8 @@ public class ImageService {
 	static final long MAX_SIZE_BYTES = 5L * 1024 * 1024;
 
 	static final Duration UPLOAD_PERMISSION_TTL = Duration.ofMinutes(10);
+
+	static final Duration IMAGE_URL_TTL = Duration.ofMinutes(10);
 
 	private static final Pattern UUID_PATTERN = Pattern
 		.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
@@ -97,6 +101,45 @@ public class ImageService {
 			storage.delete(objectKey);
 			throw ex;
 		}
+	}
+
+	/**
+	 * Where the stable address {@code /api/images/{id}} sends the browser: a short-lived signed URL.
+	 */
+	public URI imageRedirect(UUID imageId) {
+		PageImage image = findImage(imageId);
+		return storage.presignGet(image.objectKey(), IMAGE_URL_TTL);
+	}
+
+	public List<ImageResponse> list(UUID pageId) {
+		requirePage(pageId);
+		return repository.findByPage(pageId).stream().map(ImageService::toResponse).toList();
+	}
+
+	/**
+	 * Removes the record and the stored file. Only the uploader may delete for now; admins are added once the
+	 * RBAC feature provides roles.
+	 */
+	public void delete(UUID imageId, UUID userId) {
+		if (userId == null) {
+			throw new UnauthenticatedException("Sign in to delete images");
+		}
+		PageImage image = findImage(imageId);
+		if (!canDelete(image, userId)) {
+			throw new ForbiddenException("Only the uploader can delete this image");
+		}
+		repository.delete(imageId);
+		storage.delete(image.objectKey());
+		// The V2 trigger queued the key for the daily cleanup; it's already gone.
+		repository.dequeue(image.objectKey());
+	}
+
+	private boolean canDelete(PageImage image, UUID userId) {
+		return image.uploadedBy().equals(userId);
+	}
+
+	private PageImage findImage(UUID imageId) {
+		return repository.findById(imageId).orElseThrow(() -> new ResourceNotFoundException("Image not found"));
 	}
 
 	static ImageResponse toResponse(PageImage image) {

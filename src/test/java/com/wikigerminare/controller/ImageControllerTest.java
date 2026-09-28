@@ -3,9 +3,13 @@ package com.wikigerminare.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -124,6 +128,51 @@ class ImageControllerTest {
 			.principal(principal)).andExpect(status().isConflict());
 		mvc.perform(json(post("/api/pages/{pageId}/images", pageId), "{\"uploadKey\":\"pending/k\",\"fileName\":\"\"}")
 			.principal(principal)).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void imageAddressRedirectsToTheSignedUrlWithoutAuthentication() throws Exception {
+		UUID imageId = UUID.randomUUID();
+		when(imageService.imageRedirect(imageId)).thenReturn(java.net.URI.create("https://r2/get?sig"));
+
+		mvc.perform(get("/api/images/{imageId}", imageId))
+			.andExpect(status().isFound())
+			.andExpect(header().string("Location", "https://r2/get?sig"))
+			.andExpect(header().string("Cache-Control", "max-age=300, private"));
+	}
+
+	@Test
+	void unknownImageAddressIs404() throws Exception {
+		UUID imageId = UUID.randomUUID();
+		when(imageService.imageRedirect(imageId)).thenThrow(new ResourceNotFoundException("Image not found"));
+
+		mvc.perform(get("/api/images/{imageId}", imageId))
+			.andExpect(status().isNotFound())
+			.andExpect(content().json("{\"error\":\"Image not found\"}", true));
+	}
+
+	@Test
+	void listsAPagesImages() throws Exception {
+		UUID imageId = UUID.randomUUID();
+		when(imageService.list(pageId)).thenReturn(java.util.List.of(new ImageResponse(imageId, pageId, "a.png",
+				"image/png", 10, userId, Instant.parse("2026-09-28T12:00:00Z"), "/api/images/" + imageId)));
+
+		mvc.perform(get("/api/pages/{pageId}/images", pageId))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].id").value(imageId.toString()))
+			.andExpect(jsonPath("$[0].url").value("/api/images/" + imageId));
+	}
+
+	@Test
+	void deleteReturns204AndMapsForbidden() throws Exception {
+		UUID mine = UUID.randomUUID();
+		UUID theirs = UUID.randomUUID();
+		doThrow(new ForbiddenException("Only the uploader can delete this image")).when(imageService)
+			.delete(theirs, userId);
+
+		mvc.perform(delete("/api/images/{imageId}", mine).principal(principal)).andExpect(status().isNoContent());
+		verify(imageService).delete(mine, userId);
+		mvc.perform(delete("/api/images/{imageId}", theirs).principal(principal)).andExpect(status().isForbidden());
 	}
 
 	private void assertError(RuntimeException error, int status) throws Exception {

@@ -60,19 +60,19 @@ description: "Task list for 005-image-storage"
 
 ## Phase 4: User Story 2 - Readers see images on pages (Priority: P1)
 
-- [ ] T014 [P] [US2] Tests: service `imageRedirect` (404 for an unknown id, a presigned GET with a 10-min TTL); MVC `GET /api/images/{id}` → 302 with `Location` and `Cache-Control: private, max-age=300`, no auth required; integration: follow the redirect and download identical bytes
-- [ ] T015 [US2] Implement `ImageService.imageRedirect` and `GET /api/images/{id}` (research R4)
+- [X] T014 [P] [US2] Tests: service `imageRedirect` (404 for an unknown id, a presigned GET with a 10-min TTL); MVC `GET /api/images/{id}` → 302 with `Location` and `Cache-Control: private, max-age=300`, no auth required; integration: follow the redirect and download identical bytes
+- [X] T015 [US2] Implement `ImageService.imageRedirect` and `GET /api/images/{id}` (research R4)
 - [ ] T016 [US2] Extend `lambda/SnapStartPriming.java` to presign one dummy GET (no network) (research R9)
 
 ---
 
 ## Phase 5: User Story 3 - Managing a page's images (Priority: P2)
 
-- [ ] T017 [P] [US3] Tests:
+- [X] T017 [P] [US3] Tests:
   - service list (404 for a missing page) and delete (uploader 204; another user 403; unknown 404; storage object deleted)
   - MVC `GET /api/pages/{pageId}/images` and `DELETE /api/images/{id}`
   - integration: delete removes the row and the object; deleting a **page** queues its image keys (V2 trigger); the cleanup deletes the queued objects and the queue rows
-- [ ] T018 [US3] Implement `ImageService.list` and `delete` (`canDelete`: the uploader; the admin hook is noted for RBAC) and their endpoints
+- [X] T018 [US3] Implement `ImageService.list` and `delete` (`canDelete`: the uploader; the admin hook is noted for RBAC) and their endpoints
 - [ ] T019 [US3] Implement `service/ImageCleanupService.java` (process the queue: delete the object, then the row; idempotent) and route the payload `{"source":"germinawiki.image-cleanup"}` in `lambda/StreamLambdaHandler.java` to it, returning `{"deleted":N}` (research R5)
 
 ---

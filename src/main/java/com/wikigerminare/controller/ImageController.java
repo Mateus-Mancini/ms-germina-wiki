@@ -1,9 +1,15 @@
 package com.wikigerminare.controller;
 
 import java.security.Principal;
+import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,6 +50,29 @@ public class ImageController {
 	public ImageResponse confirmUpload(@PathVariable UUID pageId, @Valid @RequestBody ConfirmRequest request,
 			Principal principal) {
 		return imageService.confirmUpload(pageId, request, currentUserId(principal));
+	}
+
+	@GetMapping("/api/pages/{pageId}/images")
+	public List<ImageResponse> list(@PathVariable UUID pageId) {
+		return imageService.list(pageId);
+	}
+
+	/**
+	 * Stable image address for page content: redirects to a short-lived signed storage URL. Public, like the
+	 * pages that embed it. The browser may reuse the redirect for 5 minutes, within the URL's 10-minute life.
+	 */
+	@GetMapping("/api/images/{imageId}")
+	public ResponseEntity<Void> image(@PathVariable UUID imageId) {
+		return ResponseEntity.status(HttpStatus.FOUND)
+			.location(imageService.imageRedirect(imageId))
+			.cacheControl(CacheControl.maxAge(Duration.ofMinutes(5)).cachePrivate())
+			.build();
+	}
+
+	@DeleteMapping("/api/images/{imageId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void delete(@PathVariable UUID imageId, Principal principal) {
+		imageService.delete(imageId, currentUserId(principal));
 	}
 
 	/**

@@ -22,6 +22,20 @@ Parameters:
   AlertEmail:
     Type: String
     Description: Receives budget alerts and usage-guard shutoff notifications
+  R2AccountId:
+    Type: String
+    Description: Cloudflare account id (R2 endpoint https://<id>.r2.cloudflarestorage.com)
+  R2Bucket:
+    Type: String
+    Default: germinawiki-images
+    Description: Private R2 bucket for page images
+  R2AccessKeyId:
+    Type: String
+    NoEcho: true
+    Description: R2 API token key id, scoped to the images bucket
+  R2SecretAccessKey:
+    Type: String
+    NoEcho: true
 
 Globals:
   Function:
@@ -82,6 +96,22 @@ Resources:
           SPRING_DATASOURCE_URL: !Ref DbUrl
           SPRING_DATASOURCE_USERNAME: !Ref DbUsername
           SPRING_DATASOURCE_PASSWORD: !Ref DbPassword
+          APP_STORAGE_ACCOUNT_ID: !Ref R2AccountId
+          APP_STORAGE_BUCKET: !Ref R2Bucket
+          APP_STORAGE_ACCESS_KEY_ID: !Ref R2AccessKeyId
+          APP_STORAGE_SECRET_ACCESS_KEY: !Ref R2SecretAccessKey
+      # Daily removal of stored files of deleted images (spec 005). Invokes the 'live' alias directly,
+      # never through the public Function URL; the handler recognises this payload.
+      Events:
+        ImageCleanup:
+          Type: ScheduleV2
+          Properties:
+            Name: germinawiki-image-cleanup
+            ScheduleExpression: cron(0 6 * * ? *)
+            Input: '{"source":"germinawiki.image-cleanup"}'
+            FlexibleTimeWindow:
+              Mode: "OFF"
+            PermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/germinawiki-workload-boundary
 
   AlertTopic:
     Type: AWS::SNS::Topic

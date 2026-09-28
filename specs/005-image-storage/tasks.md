@@ -79,7 +79,7 @@ description: "Task list for 005-image-storage"
 
 ## Phase 6: Infrastructure & Deploy
 
-- [ ] T020 `template.yaml`:
+- [X] T020 `template.yaml`:
   - parameters `R2AccountId`, `R2Bucket`, `R2AccessKeyId` (NoEcho), `R2SecretAccessKey` (NoEcho) → `APP_STORAGE_*` env vars
   - a daily `ScheduleV2` on `ApiFunction` with input `{"source":"germinawiki.image-cleanup"}` and the permissions boundary
 - [ ] T021 `.github/workflows/release.yml` (pass the four R2 parameters from the `production` environment), and add the R2 values to `docs/ci-cd.md` §2

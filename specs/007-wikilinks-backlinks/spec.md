@@ -1,6 +1,6 @@
 # Feature Specification: WikiLinks e Backlinks
 
-**Feature Branch**: `003-wikilinks-backlinks`
+**Feature Branch**: `007-wikilinks-backlinks`
 
 **Created**: 2026-09-28
 

@@ -1,8 +1,8 @@
 # Implementation Plan: wikilinks-backlinks
 
-**Branch**: `003-wikilinks-backlinks` | **Date**: 2026-09-28 | **Spec**: [spec.md](spec.md)
+**Branch**: `007-wikilinks-backlinks` | **Date**: 2026-09-28 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification in `specs/003-wikilinks-backlinks/spec.md`
+**Input**: Feature specification in `specs/007-wikilinks-backlinks/spec.md`
 
 ## Summary
 
@@ -40,7 +40,7 @@ Recognize `[[slug]]` in existing Page Markdown, maintain one directed relation p
 - **Schema gate**: Docs for 002 confirm `source_page_id` and `target_page_id` plus CASCADE/SET NULL FKs, but no local DDL exists. Before mapping, inspect actual columns, primary key, unique constraints/indexes and duplicate rows. Stop and report if unique logical pairs cannot be maintained without schema changes; do not add DDL.
 - **Page lifecycle gate**: Current checked-in `PageService` has create/get/list only and `PageController` has no update route, while pages-api 002 specifies content updates. Link removal-on-edit and transactional sync require the 002 page-content update flow to exist first. Do not create a separate content endpoint in this feature.
 - **Database environment**: No process `DATABASE_URL` or `psql` client was available; `.env` was not read. PostgreSQL integration tests require the provisioned existing schema.
-- **Branch**: Current branch is `003-wikilinks-backlinks`.
+- **Branch**: Current branch is `007-wikilinks-backlinks`.
 
 ## Implementation Sequence
 
@@ -56,7 +56,7 @@ Recognize `[[slug]]` in existing Page Markdown, maintain one directed relation p
 
 ### Documentation (this feature)
 
-specs/003-wikilinks-backlinks/
+specs/007-wikilinks-backlinks/
 ├── spec.md
 ├── plan.md
 ├── research.md

@@ -1,6 +1,6 @@
 # Tasks: wikilinks-backlinks
 
-**Input**: Design documents in `specs/003-wikilinks-backlinks/`
+**Input**: Design documents in `specs/007-wikilinks-backlinks/`
 
 **Owner**: Not specified
 
@@ -14,8 +14,8 @@
 
 **Purpose**: Verify schema and dependencies before mapping or implementation.
 
-- [ ] T001 Inspect the deployed `page_links` table read-only; record columns, primary key, unique constraints/indexes, existing duplicates and FK actions in `specs/003-wikilinks-backlinks/data-model.md`. Confirm whether one source-target row can be mapped/enforced without schema changes; stop and report incompatibility rather than adding DDL.
-- [ ] T002 Verify the `pages-api` content-write path is available for both create and PATCH before enabling full synchronization; current source has create but no update route. Record readiness and the existing PostgreSQL/auth prerequisites in `specs/003-wikilinks-backlinks/quickstart.md`; do not create a new page CRUD endpoint in this feature.
+- [ ] T001 Inspect the deployed `page_links` table read-only; record columns, primary key, unique constraints/indexes, existing duplicates and FK actions in `specs/007-wikilinks-backlinks/data-model.md`. Confirm whether one source-target row can be mapped/enforced without schema changes; stop and report incompatibility rather than adding DDL.
+- [ ] T002 Verify the `pages-api` content-write path is available for both create and PATCH before enabling full synchronization; current source has create but no update route. Record readiness and the existing PostgreSQL/auth prerequisites in `specs/007-wikilinks-backlinks/quickstart.md`; do not create a new page CRUD endpoint in this feature.
 
 ## Phase 2: Foundational
 
@@ -87,9 +87,9 @@
 
 ## Phase 6: Polish and Cross-Cutting Validation
 
-- [ ] T022 Verify Springdoc `/v3/api-docs` matches `specs/003-wikilinks-backlinks/contracts/wikilinks-backlinks.openapi.json` and record validation commands/results in `specs/003-wikilinks-backlinks/quickstart.md`.
-- [ ] T023 Run focused parser/Service/MVC tests and PostgreSQL integration tests from `specs/003-wikilinks-backlinks/quickstart.md`; record actual results and explicitly report any PostgreSQL schema or pages-api PATCH prerequisite that remains unavailable.
-- [ ] T024 Review the final diff against `specs/003-wikilinks-backlinks/spec.md` and `plan.md`; confirm only `src/main/java/com/wikigerminare/pages/wikilinks/`, the required Page repository/service integration, matching tests, and the five feature docs changed. Confirm there is no DDL, migration, dependency addition, new Page API endpoint, or out-of-scope API edit.
+- [ ] T022 Verify Springdoc `/v3/api-docs` matches `specs/007-wikilinks-backlinks/contracts/wikilinks-backlinks.openapi.json` and record validation commands/results in `specs/007-wikilinks-backlinks/quickstart.md`.
+- [ ] T023 Run focused parser/Service/MVC tests and PostgreSQL integration tests from `specs/007-wikilinks-backlinks/quickstart.md`; record actual results and explicitly report any PostgreSQL schema or pages-api PATCH prerequisite that remains unavailable.
+- [ ] T024 Review the final diff against `specs/007-wikilinks-backlinks/spec.md` and `plan.md`; confirm only `src/main/java/com/wikigerminare/pages/wikilinks/`, the required Page repository/service integration, matching tests, and the five feature docs changed. Confirm there is no DDL, migration, dependency addition, new Page API endpoint, or out-of-scope API edit.
 
 ## Dependencies and Execution Order
 

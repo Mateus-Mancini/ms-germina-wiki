@@ -30,8 +30,7 @@ public class FolderService {
 
         if (request.parentFolderId() != null) {
             parentFolder = folderRepository.findById(request.parentFolderId())
-                    .orElseThrow(() ->
-                            new FolderNotFoundException(request.parentFolderId()));
+                    .orElseThrow(() -> new FolderNotFoundException(request.parentFolderId()));
         }
 
         Instant now = Instant.now();
@@ -69,51 +68,48 @@ public class FolderService {
     }
 
     @Transactional(readOnly = true)
-public List<FolderTreeNodeResponse> getTree() {
+    public List<FolderTreeNodeResponse> getTree() {
 
-    List<FolderTreeProjection> projections =
-            folderRepository.findAllForTree();
+        List<FolderTreeProjection> projections = folderRepository.findAllForTree();
 
-    Map<UUID, FolderTreeNodeResponse> nodes = new HashMap<>();
+        Map<UUID, FolderTreeNodeResponse> nodes = new HashMap<>();
 
-    for (FolderTreeProjection projection : projections) {
+        for (FolderTreeProjection projection : projections) {
 
-        nodes.put(
-                projection.getId(),
-                new FolderTreeNodeResponse(
-                        projection.getId(),
-                        projection.getName(),
-                        projection.getParentFolderId(),
-                        projection.getCreatedBy(),
-                        projection.getCreatedAt(),
-                        projection.getUpdatedAt(),
-                        new ArrayList<>()
-                )
-        );
-    }
-
-    List<FolderTreeNodeResponse> roots = new ArrayList<>();
-
-    for (FolderTreeProjection projection : projections) {
-
-        FolderTreeNodeResponse node = nodes.get(projection.getId());
-
-        UUID parentId = projection.getParentFolderId();
-
-        if (parentId == null) {
-            roots.add(node);
-            continue;
+            nodes.put(
+                    projection.getId(),
+                    new FolderTreeNodeResponse(
+                            projection.getId(),
+                            projection.getName(),
+                            projection.getParentFolderId(),
+                            projection.getCreatedBy(),
+                            projection.getCreatedAt(),
+                            projection.getUpdatedAt(),
+                            new ArrayList<>()));
         }
 
-        FolderTreeNodeResponse parent = nodes.get(parentId);
+        List<FolderTreeNodeResponse> roots = new ArrayList<>();
 
-        if (parent != null) {
-            parent.children().add(node);
+        for (FolderTreeProjection projection : projections) {
+
+            FolderTreeNodeResponse node = nodes.get(projection.getId());
+
+            UUID parentId = projection.getParentFolderId();
+
+            if (parentId == null) {
+                roots.add(node);
+                continue;
+            }
+
+            FolderTreeNodeResponse parent = nodes.get(parentId);
+
+            if (parent != null) {
+                parent.children().add(node);
+            }
         }
-    }
 
-    return roots;
-}
+        return roots;
+    }
 
     @Transactional
     public FolderResponse update(UUID id, UpdateFolderRequest request) {
@@ -125,25 +121,20 @@ public List<FolderTreeNodeResponse> getTree() {
         if (!request.isNameProvided()
                 && !request.isParentFolderIdProvided()) {
 
-            throw new FolderConflictException(
-                    "At least one field must be provided for update"
-            );
+            throw new FolderValidationException(
+                    "At least one field must be provided for update");
         }
 
         /*
          * Atualização do nome.
-         *
-         * O campo foi enviado, mas veio null:
-         * não aceitamos nome nulo.
          */
         if (request.isNameProvided()) {
 
             if (request.getName() == null
                     || request.getName().isBlank()) {
 
-                throw new FolderConflictException(
-                        "name must not be blank"
-                );
+                throw new FolderValidationException(
+                        "name must not be blank");
             }
 
             folder.setName(request.getName());
@@ -151,15 +142,11 @@ public List<FolderTreeNodeResponse> getTree() {
 
         /*
          * Atualização do pai.
-         *
-         * O lock deve ser adquirido antes de consultar
-         * a hierarquia para evitar condições de corrida.
          */
         if (request.isParentFolderIdProvided()) {
 
             folderRepository.acquireHierarchyLock(
-                    FolderRepository.HIERARCHY_LOCK_KEY
-            );
+                    FolderRepository.HIERARCHY_LOCK_KEY);
 
             UUID newParentId = request.getParentFolderId();
 
@@ -177,30 +164,23 @@ public List<FolderTreeNodeResponse> getTree() {
                 if (folder.getId().equals(newParentId)) {
 
                     throw new FolderConflictException(
-                            "A folder cannot be its own parent"
-                    );
+                            "A folder cannot be its own parent");
                 }
 
                 Folder newParent = folderRepository.findById(newParentId)
-                        .orElseThrow(() ->
-                                new FolderNotFoundException(newParentId));
+                        .orElseThrow(() -> new FolderNotFoundException(newParentId));
 
                 // Verifica se o novo pai está abaixo da pasta atual.
                 if (createsCycle(folder, newParent)) {
 
                     throw new FolderConflictException(
-                            "The requested parent would create a cycle"
-                    );
+                            "The requested parent would create a cycle");
                 }
 
                 folder.setParentFolder(newParent);
             }
         }
 
-        /*
-         * Só chegamos aqui se todas as validações passaram.
-         * Portanto a alteração pode atualizar updatedAt.
-         */
         folder.setUpdatedAt(Instant.now());
 
         Folder savedFolder = folderRepository.save(folder);
@@ -219,8 +199,7 @@ public List<FolderTreeNodeResponse> getTree() {
 
     private boolean createsCycle(
             Folder folder,
-            Folder proposedParent
-    ) {
+            Folder proposedParent) {
 
         UUID folderId = folder.getId();
         UUID currentId = proposedParent.getId();
@@ -277,7 +256,6 @@ public List<FolderTreeNodeResponse> getTree() {
                 parentFolderId,
                 folder.getCreatedBy(),
                 folder.getCreatedAt(),
-                folder.getUpdatedAt()
-        );
+                folder.getUpdatedAt());
     }
 }

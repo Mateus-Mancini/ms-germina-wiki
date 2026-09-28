@@ -1,10 +1,10 @@
 # Implementation Plan: folders-api
 
-**Branch**: `001-folders-api` (feature identifier; no Git branch created) | **Date**: 2026-09-27 | **Spec**: [spec.md](spec.md)
+**Branch**: `002-folders-api` (feature identifier; no Git branch created) | **Date**: 2026-09-27 | **Spec**: [spec.md](spec.md)
 
 **Owner**: Camilla
 
-**Input**: Feature specification in `specs/001-folders-api/spec.md`
+**Input**: Feature specification in `specs/002-folders-api/spec.md`
 
 ## Summary
 
@@ -40,7 +40,7 @@ Deliver the REST CRUD and full-tree endpoints for `folders`, mapped to the exist
 - **Automated tests**: PASS at design level. Unit, MVC and PostgreSQL integration coverage is planned for success, validation, hierarchy, delete constraints and regressions.
 - **Simplicity and scope**: PASS. Existing dependencies are reused except the required validation starter; no new database structures or out-of-scope features are introduced.
 - **External prerequisites**: Before implementation, verify the actual column types, FK names/actions and test schema in PostgreSQL, and ensure the hosting authentication layer supplies the authenticated user's UUID. These are environment dependencies, not unresolved feature behavior.
-- **Branch gate**: This planning command did not create or switch Git branches. Per the Constitution, implementation must run from the feature branch `001-folders-api` (or the team's corresponding feature branch) before source changes begin.
+- **Branch gate**: This planning command did not create or switch Git branches. Per the Constitution, implementation must run from the feature branch `002-folders-api` (or the team's corresponding feature branch) before source changes begin.
 - **Constitution recordkeeping**: The normative technical restriction now says Java 21. Its sync-impact/version/date metadata still appears to describe the earlier 2026-09-25 amendment and does not mention this technology change. Constitution governance requires amendment metadata to be recorded; reconcile that separately before adopting the Constitution change. This plan does not edit the Constitution.
 
 ## Design and Implementation Sequence
@@ -56,7 +56,7 @@ Deliver the REST CRUD and full-tree endpoints for `folders`, mapped to the exist
 ### Documentation (this feature)
 
 ```text
-specs/001-folders-api/
+specs/002-folders-api/
 ├── plan.md
 ├── research.md
 ├── data-model.md
@@ -104,3 +104,4 @@ src/test/java/com/wikigerminare/
 ## Complexity Tracking
 
 No Constitution violations require justification. The advisory lock is a narrowly scoped PostgreSQL mechanism required to uphold the specified no-cycle invariant without adding schema objects.
+

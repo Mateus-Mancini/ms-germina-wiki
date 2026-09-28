@@ -75,3 +75,4 @@
 - No explicit throughput, latency, or data-volume target is specified; do not introduce a performance SLA. The list and tree endpoints return the complete set, matching the spec.
 - The authenticated principal must be supplied by infrastructure outside this feature. The HTTP layer passes its UUID into the Service; this feature does not implement auth-api or rbac-middleware.
 - Since no migration files exist and Hibernate is configured to validate the schema, implementation must confirm the actual column types and FK actions against the target PostgreSQL database before finalizing entity annotations and delete integration tests.
+

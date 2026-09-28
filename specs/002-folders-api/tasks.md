@@ -1,6 +1,6 @@
 # Tasks: folders-api
 
-**Input**: Design documents in `specs/001-folders-api/`
+**Input**: Design documents in `specs/002-folders-api/`
 
 **Owner**: Camilla
 
@@ -15,7 +15,7 @@
 **Purpose**: Satisfy the required validation dependency and verify external database prerequisites.
 
 - [x] T001 [P] Add `spring-boot-starter-validation` to `pom.xml` so Jakarta Bean Validation constraints have a provider.
-- [x] T002 [P] Verify the deployed `folders` and `users` column types, identifier/timestamp defaults, FK actions, and a valid test creator UUID; record verified details in `specs/001-folders-api/data-model.md` without adding or changing DDL.
+- [x] T002 [P] Verify the deployed `folders` and `users` column types, identifier/timestamp defaults, FK actions, and a valid test creator UUID; record verified details in `specs/002-folders-api/data-model.md` without adding or changing DDL.
 
 ## Phase 2: Foundational
 
@@ -24,7 +24,7 @@
 - [x] T003 Map `Folder` in `src/main/java/com/wikigerminare/folders/Folder.java` to the verified existing schema: `id` is UUID primary key; `name` is required VARCHAR(150); `parent_folder_id` is a nullable FK to `folders.id`; `created_by` is a required UUID FK to `users`; `created_at` and `updated_at` are required TIMESTAMPTZ. Use no JPA delete cascade or orphan removal.
 - [x] T004 Add the basic Spring Data CRUD repository for `Folder` in `src/main/java/com/wikigerminare/folders/FolderRepository.java`; do not add schema-generation or migration code.
 
-**Checkpoint**: The mapped entity and repository validate against the pre-existing PostgreSQL schema; the current branch is already `001-folders-api`.
+**Checkpoint**: The mapped entity and repository validate against the pre-existing PostgreSQL schema; the current branch is already `002-folders-api`.
 
 ## Phase 3: User Story 1 - Create and Consult Folders (Priority: P1, MVP)
 
@@ -91,8 +91,8 @@
 
 ## Phase 6: Polish and Cross-Cutting Validation
 
-- [x] T026 Run the full Maven test suite and each scenario in `specs/001-folders-api/quickstart.md` against the provisioned PostgreSQL schema; record actual commands and outcomes in `specs/001-folders-api/quickstart.md`.
-- [x] T027 Review the final change set against `specs/001-folders-api/plan.md` and `specs/001-folders-api/spec.md`; confirm `pom.xml`, the `folders` package and its tests are the only implementation paths changed, with no DDL/migration or out-of-scope API changes.
+- [x] T026 Run the full Maven test suite and each scenario in `specs/002-folders-api/quickstart.md` against the provisioned PostgreSQL schema; record actual commands and outcomes in `specs/002-folders-api/quickstart.md`.
+- [x] T027 Review the final change set against `specs/002-folders-api/plan.md` and `specs/002-folders-api/spec.md`; confirm `pom.xml`, the `folders` package and its tests are the only implementation paths changed, with no DDL/migration or out-of-scope API changes.
 
 ## Dependencies and Execution Order
 
@@ -162,3 +162,4 @@ Task T022: Tree PostgreSQL tests in src/test/java/com/wikigerminare/folders/Fold
 ## Task Format Validation
 
 All tasks use `- [ ] T###`, include `[P]` only for independent work, include `[US1]`/`[US2]`/`[US3]` only in story phases, and name the exact source, test, or documentation path. Tests are included to satisfy Constitution Principle IV.
+

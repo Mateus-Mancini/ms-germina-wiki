@@ -34,3 +34,4 @@
 - As decisões sobre `createdBy`, exclusão e stack estão resolvidas e registradas em `spec.md`.
 - A Constitution atual exige Java 21 e está alinhada com a stack descrita em `spec.md`.
 - A lista genérica que exclui linguagens, frameworks e APIs conflita com o escopo explícito do pedido; esses requisitos foram mantidos e a exceção está documentada.
+

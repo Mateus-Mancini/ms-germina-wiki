@@ -8,7 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.dao.DataIntegrityViolationException;
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
@@ -26,8 +26,11 @@ public class FolderController {
     @PostMapping
     public ResponseEntity<FolderResponse> create(
             @Valid @RequestBody CreateFolderRequest request,
-            Principal principal
-    ) {
+            Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         UUID createdBy = UUID.fromString(principal.getName());
 
         FolderResponse response = folderService.create(request, createdBy);
@@ -39,8 +42,7 @@ public class FolderController {
 
     @GetMapping("/{id}")
     public ResponseEntity<FolderResponse> getById(
-            @PathVariable UUID id
-    ) {
+            @PathVariable UUID id) {
         return ResponseEntity.ok(folderService.getById(id));
     }
 
@@ -52,20 +54,22 @@ public class FolderController {
     @PatchMapping("/{id}")
     public ResponseEntity<FolderResponse> update(
             @PathVariable UUID id,
-            @Valid @RequestBody UpdateFolderRequest request
-    ) {
+            @Valid @RequestBody UpdateFolderRequest request) {
         return ResponseEntity.ok(
-                folderService.update(id, request)
-        );
+                folderService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @PathVariable UUID id
-    ) {
-        folderService.delete(id);
+            @PathVariable UUID id) {
+        try {
+            folderService.delete(id);
 
-        return ResponseEntity.noContent().build();
+            return ResponseEntity.noContent().build();
+
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
     }
 
     @GetMapping("/tree")

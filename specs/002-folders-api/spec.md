@@ -1,6 +1,6 @@
 # Feature Specification: API de Pastas da Wiki
 
-**Feature Branch**: `001-folders-api` (diretório da especificação; branch não criada)
+**Feature Branch**: `002-folders-api` (diretório da especificação; branch não criada)
 
 **Created**: 2026-09-27
 
@@ -129,3 +129,4 @@ O DTO de entrada de criação contém `name` e `parentFolderId` opcional; `creat
 - **Origem de `createdBy`**: derivar do principal autenticado; não aceitar identidade enviada pelo cliente. A infraestrutura de autenticação é uma dependência externa à feature.
 - **Exclusão com dependentes**: seguir as ações das FKs existentes. Não adicionar cascata própria; responder `409 Conflict` se o PostgreSQL rejeitar a exclusão.
 - **Stack e Constitution**: utilizar Java 21 conforme a Constitution atualizada pelo projeto.
+

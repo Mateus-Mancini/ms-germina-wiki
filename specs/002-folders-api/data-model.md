@@ -42,3 +42,4 @@ The exact schema, identifier defaults, timestamp defaults, FK names, and FK dele
 - `FolderResponse`: `id`, `name`, `parentFolderId`, `createdBy`, `createdAt`, `updatedAt`.
 - `FolderTreeNodeResponse`: the same folder fields plus `children`, an array of nested tree nodes. Roots have `parentFolderId: null`; leaves have `children: []`.
 - List and tree queries use one flat projection and are assembled into DTOs. Entity graphs are never serialized directly.
+

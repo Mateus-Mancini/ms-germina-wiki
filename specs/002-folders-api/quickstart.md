@@ -53,3 +53,4 @@ Use an API client authenticated through the host application's existing authenti
 - `404 Not Found`: target folder or requested parent UUID does not exist.
 - `409 Conflict`: cycle/self-parent attempt or PostgreSQL blocks a delete due to an FK.
 - Database acceptance of a delete follows the configured FK action; inspect the database schema when validating dependent records.
+

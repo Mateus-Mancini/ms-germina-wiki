@@ -36,7 +36,7 @@
           },
           "400": { "description": "Invalid title, content, UUID or request body" },
           "404": { "description": "Referenced folder does not exist" },
-          "409": { "description": "Existing PostgreSQL integrity constraint prevents creation" }
+          "409": { "description": "Slug already exists; rejected by the existing PostgreSQL UNIQUE constraint" }
         }
       },
       "get": {
@@ -158,13 +158,20 @@
       "CreatePageRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["title", "content", "folderId"],
+        "required": ["title", "slug", "content", "folderId"],
         "properties": {
           "title": {
             "type": "string",
             "minLength": 1,
             "pattern": "\\S",
-            "description": "Required non-blank title; maximum length follows the existing database column."
+            "maxLength": 255,
+            "description": "Required non-blank title; maximum 255 characters."
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "description": "Required client-provided unique slug. Stored and returned exactly as received; not generated, derived or normalized."
           },
           "content": {
             "type": "string",
@@ -182,7 +189,8 @@
             "type": "string",
             "minLength": 1,
             "pattern": "\\S",
-            "description": "When supplied, replaces the title; maximum length follows the existing database column."
+            "maxLength": 255,
+            "description": "When supplied, replaces the title; maximum 255 characters."
           },
           "content": {
             "type": "string",
@@ -196,22 +204,26 @@
         "required": [
           "id",
           "title",
+          "slug",
           "content",
           "folderId",
           "createdBy",
+          "updatedBy",
           "createdAt",
           "updatedAt",
           "version"
         ],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
-          "title": { "type": "string" },
+          "title": { "type": "string", "maxLength": 255 },
+          "slug": { "type": "string", "minLength": 1, "maxLength": 300 },
           "content": { "type": "string", "description": "Raw Markdown." },
-          "folderId": { "type": "string", "format": "uuid" },
+          "folderId": { "type": ["string", "null"], "format": "uuid", "description": "Null when the referenced folder has been deleted under ON DELETE SET NULL." },
           "createdBy": { "type": "string", "format": "uuid" },
+          "updatedBy": { "type": ["string", "null"], "format": "uuid" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" },
-          "version": { "type": "integer", "description": "Current numeric database version; exact integer width follows the existing column." }
+          "version": { "type": "integer", "format": "int32", "minimum": 1, "description": "Current PostgreSQL INTEGER version." }
         }
       },
       "StaleVersionError": {
@@ -220,7 +232,7 @@
         "required": ["error", "currentVersion"],
         "properties": {
           "error": { "type": "string" },
-          "currentVersion": { "type": "integer" }
+          "currentVersion": { "type": "integer", "format": "int32", "minimum": 1 }
         }
       }
     }

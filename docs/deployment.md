@@ -34,13 +34,15 @@ There is also an account-wide `account-safety-net` budget (USD 1), created by ha
    export WEB_APP_ORIGIN='https://germinawiki.web.app'
    export ALERT_EMAIL='...'
    export NEON_PROJECT_ID='...'   # non-secret; for migration rehearsals (npx neonctl projects list)
+   export R2_ACCOUNT_ID='...' R2_BUCKET='germinawiki-images'           # image storage (docs/image-storage.md)
+   export R2_ACCESS_KEY_ID='...' R2_SECRET_ACCESS_KEY='...'
    ```
 
 **Tools:** JDK 21, Docker, AWS CLI v2, AWS SAM CLI.
 
 ## Runtime configuration
 
-These are the stack parameters (contract: [`runtime-config.md`](../specs/001-backend-hosting/contracts/runtime-config.md)). Pass **all five** on every deploy: `--parameter-overrides` replaces, not merges, and `samconfig.toml` deliberately holds none.
+These are the stack parameters (contract: [`runtime-config.md`](../specs/001-backend-hosting/contracts/runtime-config.md)). Pass **all nine** on every deploy: `--parameter-overrides` replaces, not merges, and `samconfig.toml` deliberately holds none.
 
 | Parameter | Secret | Becomes |
 |---|---|---|
@@ -49,6 +51,10 @@ These are the stack parameters (contract: [`runtime-config.md`](../specs/001-bac
 | `DbPassword` | yes | `SPRING_DATASOURCE_PASSWORD` |
 | `WebAppOrigin` | no | Function URL CORS origin (plus fixed `http://localhost:3000`) |
 | `AlertEmail` | no | Budget and shutoff notifications. **Confirm** the SNS subscription email after the first deploy |
+| `R2AccountId` | no | `APP_STORAGE_ACCOUNT_ID`: Cloudflare account id (R2 endpoint) |
+| `R2Bucket` | no | `APP_STORAGE_BUCKET`: private images bucket (default `germinawiki-images`) |
+| `R2AccessKeyId` | yes | `APP_STORAGE_ACCESS_KEY_ID`: bucket-scoped R2 token |
+| `R2SecretAccessKey` | yes | `APP_STORAGE_SECRET_ACCESS_KEY` |
 
 Changing any parameter publishes a new version (`AutoPublishAliasAllProperties`), so config changes reach `live` like code changes.
 
@@ -67,7 +73,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s infra/guard  # guard t
 ./mvnw -Plambda -DskipTests clean package          # target/wikigerminare-lambda.zip (reproducible)
 scripts/smoke-lambda-package.sh              # runs the packaged zip against a throwaway Postgres
 sam deploy --parameter-overrides DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" \
-  WebAppOrigin="$WEB_APP_ORIGIN" AlertEmail="$ALERT_EMAIL"
+  WebAppOrigin="$WEB_APP_ORIGIN" AlertEmail="$ALERT_EMAIL" \
+  R2AccountId="$R2_ACCOUNT_ID" R2Bucket="$R2_BUCKET" R2AccessKeyId="$R2_ACCESS_KEY_ID" R2SecretAccessKey="$R2_SECRET_ACCESS_KEY"
 ```
 
 `sam deploy` shows the CloudFormation change set and asks before applying it (`confirm_changeset = true`). Read it: an API code or config change should show only `ApiFunction` (Modify), a new `ApiFunctionVersion…` (Add), `ApiFunctionAliaslive` (Modify), and the previous version's resource (Delete). That "Delete" only removes it from the template; SAM retains published versions, so rollback still works.

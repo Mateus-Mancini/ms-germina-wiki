@@ -53,6 +53,11 @@ printf %s "$DB_PASS" | gh secret set DB_PASS --env production -R "$R"
 gh variable set AWS_ROLE_ARN   --env production -R "$R" --body "$ROLE_ARN"
 gh variable set ALERT_EMAIL    --env production -R "$R" --body "$ALERT_EMAIL"
 gh variable set WEB_APP_ORIGIN --env production -R "$R" --body "$WEB_APP_ORIGIN"
+# Image storage (spec 005; see docs/image-storage.md)
+gh variable set R2_ACCOUNT_ID --env production -R "$R" --body "$R2_ACCOUNT_ID"
+gh variable set R2_BUCKET     --env production -R "$R" --body "$R2_BUCKET"
+printf %s "$R2_ACCESS_KEY_ID"     | gh secret set R2_ACCESS_KEY_ID     --env production -R "$R"
+printf %s "$R2_SECRET_ACCESS_KEY" | gh secret set R2_SECRET_ACCESS_KEY --env production -R "$R"
 ```
 
 ### 3. Backend environment `neon-rehearsal` (owner approval)
@@ -104,7 +109,7 @@ protect "$F" lint-build
 
 ```bash
 gh api "repos/$R/environments" --jq '.environments[].name'   # neon-rehearsal, production
-gh secret list --env production -R "$R"                      # DB_PASS, DB_URL, DB_USER
-gh variable list --env production -R "$R"                    # ALERT_EMAIL, AWS_ROLE_ARN, WEB_APP_ORIGIN
+gh secret list --env production -R "$R"                      # DB_PASS, DB_URL, DB_USER, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+gh variable list --env production -R "$R"                    # ALERT_EMAIL, AWS_ROLE_ARN, R2_ACCOUNT_ID, R2_BUCKET, WEB_APP_ORIGIN
 gh secret list --env production -R "$F"                      # FIREBASE_SERVICE_ACCOUNT_GERMINAWIKI
 ```

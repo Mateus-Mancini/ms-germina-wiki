@@ -22,7 +22,8 @@ import com.wikigerminare.storage.ObjectStorage;
  * R2-specific SDK settings (checksums, chunked encoding) and the bucket CORS rules. Runs only when real
  * storage credentials are in the environment, so it's skipped in CI (see docs/image-storage.md).
  */
-@SpringBootTest
+// Clear the test-classpath endpoint placeholder so the client uses the real R2 endpoint.
+@SpringBootTest(properties = "app.storage.endpoint=")
 @Import(TestcontainersConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "APP_STORAGE_ACCESS_KEY_ID", matches = ".+")
 class R2LiveSmokeTest {
@@ -35,6 +36,14 @@ class R2LiveSmokeTest {
 
 	@Autowired
 	private ObjectStorage storage;
+
+	@Autowired
+	private com.wikigerminare.config.StorageProperties properties;
+
+	@Test
+	void talksToTheRealR2Endpoint() {
+		assertThat(properties.resolvedEndpoint().getHost()).endsWith(".r2.cloudflarestorage.com");
+	}
 
 	@Test
 	void presignedUploadHeadCopyDownloadAndDeleteAgainstR2() throws Exception {

@@ -49,7 +49,7 @@ description: "Task list for 005-image-storage"
 
 ### Implementation
 
-- [ ] T010 [P] [US1] DTO records `dto/UploadRequest.java`, `dto/UploadPermission.java`, `dto/ConfirmRequest.java`, `dto/ImageResponse.java` with Bean Validation per the contract
+- [X] T010 [P] [US1] DTO records `dto/UploadRequest.java`, `dto/UploadPermission.java`, `dto/ConfirmRequest.java`, `dto/ImageResponse.java` with Bean Validation per the contract
 - [ ] T011 [P] [US1] `repository/ImageRepository.java` (`JdbcTemplate`): `pageExists`, `insert`, `findById`, `findByPage` (newest first), `delete`, plus the deletion-queue methods
 - [ ] T012 [US1] Service exceptions in `service/exception/` and `service/ImageService.java`: `requestUpload`, `confirmUpload` (research R3, R6)
 - [ ] T013 [US1] `controller/ImageController.java` (`POST /api/pages/{pageId}/images/uploads`, `POST /api/pages/{pageId}/images`) and `controller/ApiExceptionHandler.java` scoped to `ImageController`, mapping the exceptions to `{"error"}` bodies

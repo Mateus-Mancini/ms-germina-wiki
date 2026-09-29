@@ -9,6 +9,7 @@ import com.wikigerminare.entity.comment.Comment;
 import com.wikigerminare.integration.AuthenticatedUserProvider;
 import com.wikigerminare.service.CommentException;
 import com.wikigerminare.service.CommentService;
+import com.wikigerminare.support.CommentTestFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -46,18 +47,18 @@ class CommentControllerTest {
     @Test
     void createsCommentAndReturnsLocation() throws Exception {
         UUID id = UUID.randomUUID();
-        Comment comment = new Comment(id, UUID.randomUUID(), UUID.randomUUID(), "text",
-                "paragraph", "intro", "1", Instant.now());
+        Comment comment = new Comment(id, CommentTestFixtures.PAGE_ID, UUID.randomUUID(),
+                CommentTestFixtures.BLOCK_ID, "text", Instant.now());
         when(service.create(any(CreateCommentRequest.class))).thenReturn(comment);
 
         mockMvc.perform(post("/api/comments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateCommentRequest(
-                                comment.getContentId(), new AnchorRequest("paragraph", "intro", "1"), "text"))))
+                                comment.getPageId(), new AnchorRequest(CommentTestFixtures.BLOCK_ID), "text"))))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/comments/" + id))
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath("$.status").value("OPEN"));
     }
 
     @Test

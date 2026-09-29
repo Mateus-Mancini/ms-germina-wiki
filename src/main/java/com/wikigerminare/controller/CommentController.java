@@ -38,12 +38,11 @@ public class CommentController {
 
     @GetMapping
     @Operation(summary = "Lista comentários ativos por conteúdo e anchor")
-    public CommentPageResponse list(@RequestParam UUID contentId,
-                                    @RequestParam(required = false) String anchorType,
-                                    @RequestParam(required = false) String anchorValue,
+    public CommentPageResponse list(@RequestParam UUID pageId,
+                                    @RequestParam(required = false) UUID blockId,
                                     @RequestParam(defaultValue = "0") int page,
                                     @RequestParam(defaultValue = "20") int size) {
-        return CommentPageResponse.from(commentService.list(contentId, anchorType, anchorValue, page, size));
+        return CommentPageResponse.from(commentService.list(pageId, blockId, page, size));
     }
 
     @PostMapping

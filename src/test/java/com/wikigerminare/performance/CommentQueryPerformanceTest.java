@@ -15,31 +15,31 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DataJpaTest
+@DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 class CommentQueryPerformanceTest {
     @Autowired
     private CommentRepository repository;
 
     @Test
     void p95OfFirstPageQueriesIsUnderOneSecond() {
-        UUID contentId = UUID.randomUUID();
+        UUID pageId = UUID.randomUUID();
         Instant createdAt = Instant.now();
         List<Comment> comments = new ArrayList<>();
         for (int index = 0; index < 1000; index++) {
-            comments.add(new Comment(UUID.randomUUID(), contentId, UUID.randomUUID(), "comment " + index,
-                    "paragraph", "anchor-" + (index % 20), "1", createdAt.plusNanos(index)));
+                comments.add(new Comment(UUID.randomUUID(), pageId, UUID.randomUUID(), UUID.randomUUID(),
+                    "comment " + index, createdAt.plusNanos(index)));
         }
         repository.saveAll(comments);
         PageRequest page = PageRequest.of(0, 20,
                 Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id")));
         for (int warmup = 0; warmup < 3; warmup++) {
-            repository.findByContentIdAndStatus(contentId, Comment.Status.ACTIVE, page);
+            repository.findByPageIdAndParentCommentIsNullAndStatus(pageId, Comment.Status.OPEN, page);
         }
 
         long[] durations = new long[20];
         for (int index = 0; index < durations.length; index++) {
             long start = System.nanoTime();
-            repository.findByContentIdAndStatus(contentId, Comment.Status.ACTIVE, page);
+            repository.findByPageIdAndParentCommentIsNullAndStatus(pageId, Comment.Status.OPEN, page);
             durations[index] = System.nanoTime() - start;
         }
         java.util.Arrays.sort(durations);

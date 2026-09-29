@@ -23,6 +23,7 @@ import com.wikigerminare.entity.comment.Comment;
 import com.wikigerminare.integration.AuthenticatedUserProvider;
 import com.wikigerminare.service.CommentException;
 import com.wikigerminare.service.CommentService;
+import com.wikigerminare.support.CommentTestFixtures;
 
 class CommentQueryControllerTest {
     private MockMvc mockMvc;
@@ -38,16 +39,15 @@ class CommentQueryControllerTest {
 
     @Test
     void returnsPaginatedCommentsForAnchor() throws Exception {
-        UUID contentId = UUID.randomUUID();
-        Comment comment = new Comment(UUID.randomUUID(), contentId, UUID.randomUUID(), "text",
-                "paragraph", "intro", "1", Instant.now());
-        when(service.list(eq(contentId), eq("paragraph"), eq("intro"), anyInt(), anyInt()))
+        UUID pageId = CommentTestFixtures.PAGE_ID;
+        Comment comment = new Comment(UUID.randomUUID(), pageId, UUID.randomUUID(), CommentTestFixtures.BLOCK_ID,
+                "text", Instant.now());
+        when(service.list(eq(pageId), eq(CommentTestFixtures.BLOCK_ID), anyInt(), anyInt()))
                 .thenReturn(new PageImpl<>(List.of(comment), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/comments")
-                        .param("contentId", contentId.toString())
-                        .param("anchorType", "paragraph")
-                        .param("anchorValue", "intro"))
+                        .param("pageId", pageId.toString())
+                        .param("blockId", CommentTestFixtures.BLOCK_ID.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].text").value("text"))
                 .andExpect(jsonPath("$.page").value(0))
@@ -57,11 +57,11 @@ class CommentQueryControllerTest {
 
     @Test
     void mapsUnavailableContentToConflict() throws Exception {
-        UUID contentId = UUID.randomUUID();
-        when(service.list(eq(contentId), eq(null), eq(null), anyInt(), anyInt()))
+        UUID pageId = UUID.randomUUID();
+        when(service.list(eq(pageId), eq(null), anyInt(), anyInt()))
                 .thenThrow(new CommentException("CONTENT_UNAVAILABLE", "Content unavailable"));
 
-        mockMvc.perform(get("/api/comments").param("contentId", contentId.toString()))
+        mockMvc.perform(get("/api/comments").param("pageId", pageId.toString()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONTENT_UNAVAILABLE"));
     }

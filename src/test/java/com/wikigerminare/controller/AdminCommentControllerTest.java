@@ -19,7 +19,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wikigerminare.config.ApiExceptionHandler;
 import com.wikigerminare.dto.comment.CreateAdminReplyRequest;
-import com.wikigerminare.entity.comment.AdminReply;
 import com.wikigerminare.entity.comment.Comment;
 import com.wikigerminare.integration.AuthenticatedUserProvider;
 import com.wikigerminare.service.CommentException;
@@ -42,10 +41,9 @@ class AdminCommentControllerTest {
     @Test
     void createsAdminReply() throws Exception {
         UUID commentId = UUID.randomUUID();
-        Comment comment = new Comment(commentId, UUID.randomUUID(), UUID.randomUUID(), "question",
-                "paragraph", "intro", "1", Instant.now());
-        AdminReply reply = new AdminReply(UUID.randomUUID(), UUID.randomUUID(), "answer", Instant.now());
-        comment.addReply(reply);
+        Comment comment = new Comment(commentId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                "question", Instant.now());
+        Comment reply = Comment.reply(UUID.randomUUID(), comment, UUID.randomUUID(), "answer", Instant.now());
         when(service.reply(eq(commentId), any(CreateAdminReplyRequest.class))).thenReturn(reply);
 
         mockMvc.perform(post("/api/comments/{id}/admin-replies", commentId)

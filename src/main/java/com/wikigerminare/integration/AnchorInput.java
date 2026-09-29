@@ -1,4 +1,4 @@
 package com.wikigerminare.integration;
 
-public record AnchorInput(String type, String value, String revision) {
+public record AnchorInput(java.util.UUID blockId) {
 }

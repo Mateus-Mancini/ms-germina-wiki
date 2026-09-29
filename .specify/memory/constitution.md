@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 -> 1.0.1
+- Version change: 1.0.1 -> 1.0.2
 - Modified principles: template principles -> I. Especificação como fonte de verdade;
   II. Arquitetura em camadas; III. Contratos REST e DTOs; IV. Testes automatizados;
   V. Simplicidade, consistência e manutenibilidade
@@ -104,5 +104,5 @@ introduzida MUST possuir justificativa. A Constitution MUST permanecer estável 
 regras só devem ser adicionadas quando representarem uma necessidade recorrente ou um
 princípio importante para a evolução do GerminaWiki.
 
-**Version**: 1.0.1 | **Ratified**: TODO(RATIFICATION_DATE): confirmar data de adoção
+**Version**: 1.0.2 | **Ratified**: TODO(RATIFICATION_DATE): confirmar data de adoção
 original | **Last Amended**: 2026-09-28

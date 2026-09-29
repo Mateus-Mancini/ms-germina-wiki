@@ -1,0 +1,216 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Bootstrap for GitHub Actions deploys of ms-germina-wiki (feature 003-ci-cd). Deployed once by the account
+  owner, separately from the app stack, so the pipeline can never widen its own permissions.
+  Short-lived OIDC credentials only; no access keys.
+
+Parameters:
+  # GitHub's OIDC 'sub' claim identifies owner and repository by name AND immutable id
+  # (owner@owner_id/repo@repo_id), so a renamed or re-created repository can't inherit this trust.
+  # Ids: gh api repos/Mateus-Mancini/ms-germina-wiki --jq '"\(.owner.id) \(.id)"'
+  GitHubRepo:
+    Type: String
+    Default: Mateus-Mancini@115586427/ms-germina-wiki@1365859536
+  GitHubEnvironment:
+    Type: String
+    Default: production
+  AppStackName:
+    Type: String
+    Default: ms-germina-wiki
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+
+  # Upper bound for every role the app stack creates (Lambda execution roles, scheduler role).
+  # The deploy role may only create/modify roles that carry this boundary, which prevents privilege escalation.
+  WorkloadBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: germinawiki-workload-boundary
+      Description: Maximum permissions for roles created by the ms-germina-wiki stack
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: Logs
+            Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/germinawiki-*
+          - Sid: UsageGuard
+            Effect: Allow
+            Action:
+              - cloudwatch:GetMetricStatistics
+              - lambda:ListFunctions
+            Resource: "*"
+          - Sid: UsageGuardTargets
+            Effect: Allow
+            Action:
+              - lambda:GetFunctionConcurrency
+              - lambda:PutFunctionConcurrency
+              - lambda:InvokeFunction
+            Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:germinawiki-*
+          - Sid: Alerts
+            Effect: Allow
+            Action: sns:Publish
+            Resource: !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:germinawiki-alerts
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: germinawiki-github-deploy
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepo}:environment:${GitHubEnvironment}
+      Policies:
+        - PolicyName: deploy-ms-germina-wiki
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CloudFormationAppStack
+                Effect: Allow
+                Action:
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResource
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:ListStackResources
+                  - cloudformation:GetTemplate
+                  - cloudformation:GetTemplateSummary
+                Resource:
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AppStackName}/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/aws-sam-cli-managed-default/*
+              - Sid: SamTransform
+                Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+              - Sid: CloudFormationGlobal
+                Effect: Allow
+                Action: cloudformation:ValidateTemplate
+                Resource: "*"
+              - Sid: SamArtifacts
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource:
+                  - arn:aws:s3:::aws-sam-cli-managed-default-samclisourcebucket-*
+                  - arn:aws:s3:::aws-sam-cli-managed-default-samclisourcebucket-*/*
+              - Sid: LambdaFunctions
+                Effect: Allow
+                Action: lambda:*
+                Resource:
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:germinawiki-*
+              - Sid: LambdaRead
+                Effect: Allow
+                Action:
+                  - lambda:GetAccountSettings
+                  - lambda:ListFunctions
+                Resource: "*"
+              - Sid: StackRolesOnlyWithBoundary
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:PutRolePolicy
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:PutRolePermissionsBoundary
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/${AppStackName}-*
+                Condition:
+                  StringEquals:
+                    iam:PermissionsBoundary: !Ref WorkloadBoundary
+              - Sid: StackRolesManage
+                Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:GetRolePolicy
+                  - iam:ListRolePolicies
+                  - iam:ListAttachedRolePolicies
+                  - iam:UpdateRole
+                  - iam:UpdateAssumeRolePolicy
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:DeleteRole
+                  - iam:PassRole
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/${AppStackName}-*
+              - Sid: NeverRemoveBoundary
+                Effect: Deny
+                Action: iam:DeleteRolePermissionsBoundary
+                Resource: "*"
+              - Sid: Logs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:DeleteLogGroup
+                  - logs:PutRetentionPolicy
+                  - logs:DescribeLogGroups
+                  - logs:TagResource
+                  - logs:UntagResource
+                  - logs:ListTagsForResource
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/germinawiki-*
+              - Sid: LogsDescribe
+                Effect: Allow
+                Action: logs:DescribeLogGroups
+                Resource: "*"
+              - Sid: Scheduler
+                Effect: Allow
+                Action:
+                  - scheduler:CreateSchedule
+                  - scheduler:UpdateSchedule
+                  - scheduler:GetSchedule
+                  - scheduler:DeleteSchedule
+                  - scheduler:TagResource
+                  - scheduler:UntagResource
+                  - scheduler:ListTagsForResource
+                Resource: !Sub arn:aws:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/default/germinawiki-*
+              - Sid: Alerts
+                Effect: Allow
+                Action:
+                  - sns:CreateTopic
+                  - sns:DeleteTopic
+                  - sns:GetTopicAttributes
+                  - sns:SetTopicAttributes
+                  - sns:Subscribe
+                  - sns:Unsubscribe
+                  - sns:ListSubscriptionsByTopic
+                  - sns:GetSubscriptionAttributes
+                  - sns:TagResource
+                  - sns:UntagResource
+                  - sns:ListTagsForResource
+                Resource: !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:germinawiki-alerts
+              - Sid: Budget
+                Effect: Allow
+                Action:
+                  - budgets:ViewBudget
+                  - budgets:ModifyBudget
+                Resource: !Sub arn:aws:budgets::${AWS::AccountId}:budget/germinawiki-monthly
+
+Outputs:
+  RoleArn:
+    Description: Set as the AWS_ROLE_ARN variable of the GitHub 'production' environment
+    Value: !GetAtt DeployRole.Arn
+  WorkloadBoundaryArn:
+    Description: Permissions boundary every app-stack role must carry (template.yaml PermissionsBoundary)
+    Value: !Ref WorkloadBoundary

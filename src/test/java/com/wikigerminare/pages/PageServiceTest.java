@@ -1,10 +1,12 @@
 package com.wikigerminare.pages;
 
+import com.wikigerminare.folders.Folder;
 import com.wikigerminare.folders.FolderNotFoundException;
 import com.wikigerminare.folders.FolderRepository;
 import com.wikigerminare.pages.dto.CreatePageRequest;
 import com.wikigerminare.pages.dto.PageResponse;
 import com.wikigerminare.pages.dto.UpdatePageRequest;
+import com.wikigerminare.pages.wikilinks.WikiLinkService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +21,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import com.wikigerminare.folders.Folder;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -27,689 +29,702 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PageServiceTest {
 
-    @Mock
-    private PageRepository pageRepository;
-
-    @Mock
-    private FolderRepository folderRepository;
-
-    @InjectMocks
-    private PageService pageService;
-
-    private UUID pageId;
-    private UUID folderId;
-    private UUID userId;
-
-    @BeforeEach
-    void setUp() {
-        pageId = UUID.randomUUID();
-        folderId = UUID.randomUUID();
-        userId = UUID.randomUUID();
-    }
-
-    @Test
-    void shouldCreatePage() {
-
-        CreatePageRequest request = new CreatePageRequest(
-                "Getting started",
-                "getting-started",
-                "# Welcome\n\nRaw **Markdown**.",
-                folderId);
-
-        when(folderRepository.findById(folderId))
-                .thenReturn(Optional.of(mockFolder()));
-
-        when(pageRepository.save(any(Page.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        PageResponse response = pageService.create(
-                request,
-                userId);
-
-        assertNotNull(response);
-        assertEquals("Getting started", response.title());
-        assertEquals("getting-started", response.slug());
-        assertEquals(
-                "# Welcome\n\nRaw **Markdown**.",
-                response.content());
-        assertEquals(folderId, response.folderId());
-        assertEquals(userId, response.createdBy());
-        assertEquals(1, response.version());
+@Mock
+private PageRepository pageRepository;
+
+@Mock
+private FolderRepository folderRepository;
+
+@Mock
+private WikiLinkService wikiLinkService;
+
+@InjectMocks
+private PageService pageService;
+
+private UUID pageId;
+private UUID folderId;
+private UUID userId;
+
+@BeforeEach
+void setUp() {
+    pageId = UUID.randomUUID();
+    folderId = UUID.randomUUID();
+    userId = UUID.randomUUID();
+}
+
+@Test
+void shouldCreatePage() {
+
+    CreatePageRequest request = new CreatePageRequest(
+            "Getting started",
+            "getting-started",
+            "# Welcome\n\nRaw **Markdown**.",
+            folderId);
+
+    when(folderRepository.findById(folderId))
+            .thenReturn(Optional.of(mockFolder()));
+
+    when(pageRepository.save(any(Page.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+    PageResponse response = pageService.create(
+            request,
+            userId);
+
+    assertNotNull(response);
+    assertEquals("Getting started", response.title());
+    assertEquals("getting-started", response.slug());
+    assertEquals(
+            "# Welcome\n\nRaw **Markdown**.",
+            response.content());
+    assertEquals(folderId, response.folderId());
+    assertEquals(userId, response.createdBy());
+    assertEquals(1, response.version());
+
+    verify(folderRepository).findById(folderId);
+    verify(pageRepository).save(any(Page.class));
+}
 
-        verify(folderRepository).findById(folderId);
-        verify(pageRepository).save(any(Page.class));
-    }
+@Test
+void shouldThrowWhenFolderDoesNotExist() {
 
-    @Test
-    void shouldThrowWhenFolderDoesNotExist() {
+    CreatePageRequest request = new CreatePageRequest(
+            "Getting started",
+            "getting-started",
+            "# Welcome",
+            folderId);
 
-        CreatePageRequest request = new CreatePageRequest(
-                "Getting started",
-                "getting-started",
-                "# Welcome",
-                folderId);
+    when(folderRepository.findById(folderId))
+            .thenReturn(Optional.empty());
 
-        when(folderRepository.findById(folderId))
-                .thenReturn(Optional.empty());
+    assertThrows(
+            FolderNotFoundException.class,
+            () -> pageService.create(request, userId));
 
-        assertThrows(
-                FolderNotFoundException.class,
-                () -> pageService.create(request, userId));
+    verify(pageRepository, never())
+            .save(any(Page.class));
+}
 
-        verify(pageRepository, never())
-                .save(any(Page.class));
-    }
+@Test
+void shouldThrowConflictWhenSlugAlreadyExists() {
 
-    @Test
-    void shouldThrowConflictWhenSlugAlreadyExists() {
+    CreatePageRequest request = new CreatePageRequest(
+            "Getting started",
+            "getting-started",
+            "# Welcome",
+            folderId);
 
-        CreatePageRequest request = new CreatePageRequest(
-                "Getting started",
-                "getting-started",
-                "# Welcome",
-                folderId);
+    when(folderRepository.findById(folderId))
+            .thenReturn(Optional.of(mockFolder()));
 
-        when(folderRepository.findById(folderId))
-                .thenReturn(Optional.of(mockFolder()));
+    SQLException sqlException = new SQLException(
+            "duplicate key",
+            "23505");
 
-        SQLException sqlException = new SQLException(
-                "duplicate key",
-                "23505");
+    DataIntegrityViolationException exception =
+            new DataIntegrityViolationException(
+                    "Duplicate slug",
+                    sqlException);
 
-        DataIntegrityViolationException exception = new DataIntegrityViolationException(
-                "Duplicate slug",
-                sqlException);
+    when(pageRepository.save(any(Page.class)))
+            .thenThrow(exception);
 
-        when(pageRepository.save(any(Page.class)))
-                .thenThrow(exception);
+    PageConflictException thrown = assertThrows(
+            PageConflictException.class,
+            () -> pageService.create(request, userId));
 
-        PageConflictException thrown = assertThrows(
-                PageConflictException.class,
-                () -> pageService.create(request, userId));
+    assertEquals(
+            "A page with this slug already exists",
+            thrown.getMessage());
+}
 
-        assertEquals(
-                "A page with this slug already exists",
-                thrown.getMessage());
-    }
+@Test
+void shouldGetPageById() {
 
-    @Test
-    void shouldGetPageById() {
+    Page page = createPage();
 
-        Page page = createPage();
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    PageResponse response = pageService.getById(pageId);
 
-        PageResponse response = pageService.getById(pageId);
+    assertNotNull(response);
+    assertEquals(pageId, response.id());
+    assertEquals("Getting started", response.title());
+    assertEquals("getting-started", response.slug());
+    assertEquals("# Welcome", response.content());
+    assertEquals(1, response.version());
+    assertEquals(folderId, response.folderId());
+    assertEquals(userId, response.createdBy());
 
-        assertNotNull(response);
-        assertEquals(pageId, response.id());
-        assertEquals("Getting started", response.title());
-        assertEquals("getting-started", response.slug());
-        assertEquals("# Welcome", response.content());
-        assertEquals(1, response.version());
-        assertEquals(folderId, response.folderId());
-        assertEquals(userId, response.createdBy());
+    verify(pageRepository).findById(pageId);
+}
 
-        verify(pageRepository).findById(pageId);
-    }
+@Test
+void shouldThrowWhenPageDoesNotExist() {
 
-    @Test
-    void shouldThrowWhenPageDoesNotExist() {
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.empty());
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.empty());
+    assertThrows(
+            PageNotFoundException.class,
+            () -> pageService.getById(pageId));
+}
 
-        assertThrows(
-                PageNotFoundException.class,
-                () -> pageService.getById(pageId));
-    }
+@Test
+void shouldListPages() {
 
-    @Test
-    void shouldListPages() {
+    Page page1 = createPage();
 
-        Page page1 = createPage();
+    Page page2 = createPage();
+    page2.setId(UUID.randomUUID());
+    page2.setTitle("Another page");
+    page2.setSlug("another-page");
 
-        Page page2 = createPage();
-        page2.setId(UUID.randomUUID());
-        page2.setTitle("Another page");
-        page2.setSlug("another-page");
+    when(pageRepository.findAll())
+            .thenReturn(List.of(page1, page2));
 
-        when(pageRepository.findAll())
-                .thenReturn(List.of(page1, page2));
+    List<PageResponse> response = pageService.list();
 
-        List<PageResponse> response = pageService.list();
+    assertEquals(2, response.size());
 
-        assertEquals(2, response.size());
+    assertEquals(
+            "Getting started",
+            response.get(0).title());
 
-        assertEquals(
-                "Getting started",
-                response.get(0).title());
+    assertEquals(
+            "Another page",
+            response.get(1).title());
 
-        assertEquals(
-                "Another page",
-                response.get(1).title());
+    verify(pageRepository).findAll();
+}
 
-        verify(pageRepository).findAll();
-    }
+@Test
+void shouldReturnEmptyListWhenThereAreNoPages() {
 
-    @Test
-    void shouldReturnEmptyListWhenThereAreNoPages() {
+    when(pageRepository.findAll())
+            .thenReturn(List.of());
 
-        when(pageRepository.findAll())
-                .thenReturn(List.of());
+    List<PageResponse> response = pageService.list();
 
-        List<PageResponse> response = pageService.list();
+    assertNotNull(response);
+    assertTrue(response.isEmpty());
 
-        assertNotNull(response);
-        assertTrue(response.isEmpty());
+    verify(pageRepository).findAll();
+}
 
-        verify(pageRepository).findAll();
-    }
+@Test
+void shouldUpdatePageContentWithValidIfMatch() {
 
-    @Test
-    void shouldUpdatePageContentWithValidIfMatch() {
+    Page page = createPage();
 
-        Page page = createPage();
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setContent(
+            "Updated **Markdown**.");
 
-        request.setContent(
-                "Updated **Markdown**.");
+    String etag = "\"" + pageId + "-v1\"";
 
-        String etag = "\"" + pageId + "-v1\"";
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    when(pageRepository.saveAndFlush(page))
+            .thenAnswer(invocation -> {
+                page.setVersion(2);
+                return page;
+            });
 
-        when(pageRepository.saveAndFlush(page))
-                .thenAnswer(invocation -> {
-                    page.setVersion(2);
-                    return page;
-                });
+    PageResponse response = pageService.update(
+            pageId,
+            request,
+            etag,
+            userId);
 
-        PageResponse response = pageService.update(
-                pageId,
-                request,
-                etag,
-                userId);
+    assertEquals(
+            "Updated **Markdown**.",
+            response.content());
 
-        assertEquals(
-                "Updated **Markdown**.",
-                response.content());
+    assertEquals(
+            2,
+            response.version());
 
-        assertEquals(
-                2,
-                response.version());
+    assertEquals(
+            userId,
+            response.updatedBy());
 
-        assertEquals(
-                userId,
-                response.updatedBy());
+    verify(pageRepository)
+            .saveAndFlush(page);
+}
 
-        verify(pageRepository)
-                .saveAndFlush(page);
-    }
+@Test
+void shouldUpdatePageTitleWithValidIfMatch() {
 
-    @Test
-    void shouldUpdatePageTitleWithValidIfMatch() {
+    Page page = createPage();
 
-        Page page = createPage();
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setTitle("Updated title");
 
-        request.setTitle("Updated title");
+    String etag = "\"" + pageId + "-v1\"";
 
-        String etag = "\"" + pageId + "-v1\"";
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    when(pageRepository.saveAndFlush(page))
+            .thenAnswer(invocation -> {
+                page.setVersion(2);
+                return page;
+            });
 
-        when(pageRepository.saveAndFlush(page))
-                .thenAnswer(invocation -> {
-                    page.setVersion(2);
-                    return page;
-                });
+    PageResponse response = pageService.update(
+            pageId,
+            request,
+            etag,
+            userId);
 
-        PageResponse response = pageService.update(
-                pageId,
-                request,
-                etag,
-                userId);
+    assertEquals(
+            "Updated title",
+            response.title());
 
-        assertEquals(
-                "Updated title",
-                response.title());
+    assertEquals(
+            2,
+            response.version());
 
-        assertEquals(
-                2,
-                response.version());
+    assertEquals(
+            userId,
+            response.updatedBy());
+}
 
-        assertEquals(
-                userId,
-                response.updatedBy());
-    }
+@Test
+void shouldUpdateTitleAndContentTogether() {
 
-    @Test
-    void shouldUpdateTitleAndContentTogether() {
+    Page page = createPage();
 
-        Page page = createPage();
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setTitle("New title");
+    request.setContent("New content");
 
-        request.setTitle("New title");
-        request.setContent("New content");
+    String etag = "\"" + pageId + "-v1\"";
 
-        String etag = "\"" + pageId + "-v1\"";
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    when(pageRepository.saveAndFlush(page))
+            .thenAnswer(invocation -> {
+                page.setVersion(2);
+                return page;
+            });
 
-        when(pageRepository.saveAndFlush(page))
-                .thenAnswer(invocation -> {
-                    page.setVersion(2);
-                    return page;
-                });
+    PageResponse response = pageService.update(
+            pageId,
+            request,
+            etag,
+            userId);
 
-        PageResponse response = pageService.update(
-                pageId,
-                request,
-                etag,
-                userId);
+    assertEquals(
+            "New title",
+            response.title());
 
-        assertEquals(
-                "New title",
-                response.title());
+    assertEquals(
+            "New content",
+            response.content());
+}
 
-        assertEquals(
-                "New content",
-                response.content());
-    }
+@Test
+void shouldThrow428WhenIfMatchIsMissing() {
 
-    @Test
-    void shouldThrow428WhenIfMatchIsMissing() {
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setContent("Updated content");
 
-        request.setContent("Updated content");
+    PagePreconditionRequiredException exception =
+            assertThrows(
+                    PagePreconditionRequiredException.class,
+                    () -> pageService.update(
+                            pageId,
+                            request,
+                            null,
+                            userId));
 
-        PagePreconditionRequiredException exception = assertThrows(
-                PagePreconditionRequiredException.class,
-                () -> pageService.update(
-                        pageId,
-                        request,
-                        null,
-                        userId));
+    assertEquals(
+            "If-Match header is required",
+            exception.getMessage());
 
-        assertEquals(
-                "If-Match header is required",
-                exception.getMessage());
+    verifyNoInteractions(pageRepository);
+}
 
-        verifyNoInteractions(pageRepository);
-    }
+@Test
+void shouldThrow428WhenIfMatchIsBlank() {
 
-    @Test
-    void shouldThrow428WhenIfMatchIsBlank() {
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setContent("Updated content");
 
-        request.setContent("Updated content");
+    assertThrows(
+            PagePreconditionRequiredException.class,
+            () -> pageService.update(
+                    pageId,
+                    request,
+                    "   ",
+                    userId));
 
-        assertThrows(
-                PagePreconditionRequiredException.class,
-                () -> pageService.update(
-                        pageId,
-                        request,
-                        "   ",
-                        userId));
+    verifyNoInteractions(pageRepository);
+}
 
-        verifyNoInteractions(pageRepository);
-    }
+@Test
+void shouldThrow400WhenIfMatchIsInvalid() {
 
-    @Test
-    void shouldThrow400WhenIfMatchIsInvalid() {
+    Page page = createPage();
 
-        Page page = createPage();
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setContent("Updated content");
 
-        request.setContent("Updated content");
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    PageBadRequestException exception =
+            assertThrows(
+                    PageBadRequestException.class,
+                    () -> pageService.update(
+                            pageId,
+                            request,
+                            "invalid-etag",
+                            userId));
 
-        PageBadRequestException exception = assertThrows(
-                PageBadRequestException.class,
-                () -> pageService.update(
-                        pageId,
-                        request,
-                        "invalid-etag",
-                        userId));
+    assertEquals(
+            "Invalid If-Match value",
+            exception.getMessage());
 
-        assertEquals(
-                "Invalid If-Match value",
-                exception.getMessage());
+    verify(pageRepository, never())
+            .saveAndFlush(any(Page.class));
+}
 
-        verify(pageRepository, never())
-                .saveAndFlush(any(Page.class));
-    }
+@Test
+void shouldThrow412WhenIfMatchIsStale() {
 
-    @Test
-    void shouldThrow412WhenIfMatchIsStale() {
+    Page page = createPage();
+    page.setVersion(2);
 
-        Page page = createPage();
-        page.setVersion(2);
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setContent("Updated content");
 
-        request.setContent("Updated content");
+    String oldEtag = "\"" + pageId + "-v1\"";
 
-        String oldEtag = "\"" + pageId + "-v1\"";
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    PagePreconditionFailedException exception =
+            assertThrows(
+                    PagePreconditionFailedException.class,
+                    () -> pageService.update(
+                            pageId,
+                            request,
+                            oldEtag,
+                            userId));
 
-        PagePreconditionFailedException exception = assertThrows(
-                PagePreconditionFailedException.class,
-                () -> pageService.update(
-                        pageId,
-                        request,
-                        oldEtag,
-                        userId));
+    assertEquals(
+            pageId,
+            exception.getPageId());
 
-        assertEquals(
-                pageId,
-                exception.getPageId());
+    assertEquals(
+            2,
+            exception.getCurrentVersion());
 
-        assertEquals(
-                2,
-                exception.getCurrentVersion());
+    verify(pageRepository, never())
+            .saveAndFlush(any(Page.class));
+}
 
-        verify(pageRepository, never())
-                .saveAndFlush(any(Page.class));
-    }
+@Test
+void shouldThrowWhenUpdatingUnknownPage() {
 
-    @Test
-    void shouldThrowWhenUpdatingUnknownPage() {
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setContent("Updated content");
 
-        request.setContent("Updated content");
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.empty());
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.empty());
+    assertThrows(
+            PageNotFoundException.class,
+            () -> pageService.update(
+                    pageId,
+                    request,
+                    "\"" + pageId + "-v1\"",
+                    userId));
 
-        assertThrows(
-                PageNotFoundException.class,
-                () -> pageService.update(
-                        pageId,
-                        request,
-                        "\"" + pageId + "-v1\"",
-                        userId));
+    verify(pageRepository, never())
+            .saveAndFlush(any(Page.class));
+}
 
-        verify(pageRepository, never())
-                .saveAndFlush(any(Page.class));
-    }
+@Test
+void shouldThrowWhenUpdateHasNoFields() {
 
-    @Test
-    void shouldThrowWhenUpdateHasNoFields() {
+    Page page = createPage();
 
-        Page page = createPage();
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    PageValidationException exception =
+            assertThrows(
+                    PageValidationException.class,
+                    () -> pageService.update(
+                            pageId,
+                            request,
+                            "\"" + pageId + "-v1\"",
+                            userId));
 
-        PageValidationException exception = assertThrows(
-                PageValidationException.class,
-                () -> pageService.update(
-                        pageId,
-                        request,
-                        "\"" + pageId + "-v1\"",
-                        userId));
+    assertEquals(
+            "At least one field must be provided for update",
+            exception.getMessage());
 
-        assertEquals(
-                "At least one field must be provided for update",
-                exception.getMessage());
+    verify(pageRepository, never())
+            .saveAndFlush(any(Page.class));
+}
 
-        verify(pageRepository, never())
-                .saveAndFlush(any(Page.class));
-    }
+@Test
+void shouldThrowWhenUpdatedTitleIsBlank() {
 
-    @Test
-    void shouldThrowWhenUpdatedTitleIsBlank() {
+    Page page = createPage();
 
-        Page page = createPage();
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setTitle("   ");
 
-        request.setTitle("   ");
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    PageValidationException exception =
+            assertThrows(
+                    PageValidationException.class,
+                    () -> pageService.update(
+                            pageId,
+                            request,
+                            "\"" + pageId + "-v1\"",
+                            userId));
 
-        PageValidationException exception = assertThrows(
-                PageValidationException.class,
-                () -> pageService.update(
-                        pageId,
-                        request,
-                        "\"" + pageId + "-v1\"",
-                        userId));
+    assertEquals(
+            "title must not be blank",
+            exception.getMessage());
 
-        assertEquals(
-                "title must not be blank",
-                exception.getMessage());
+    verify(pageRepository, never())
+            .saveAndFlush(any(Page.class));
+}
 
-        verify(pageRepository, never())
-                .saveAndFlush(any(Page.class));
-    }
+@Test
+void shouldThrowWhenUpdatedContentIsNull() {
 
-    @Test
-    void shouldThrowWhenUpdatedContentIsNull() {
+    Page page = createPage();
 
-        Page page = createPage();
+    UpdatePageRequest request = new UpdatePageRequest() {
+        @Override
+        public boolean isContentProvided() {
+            return true;
+        }
 
-        UpdatePageRequest request = new UpdatePageRequest() {
-            @Override
-            public boolean isContentProvided() {
-                return true;
-            }
+        @Override
+        public String getContent() {
+            return null;
+        }
+    };
 
-            @Override
-            public String getContent() {
-                return null;
-            }
-        };
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    PageValidationException exception =
+            assertThrows(
+                    PageValidationException.class,
+                    () -> pageService.update(
+                            pageId,
+                            request,
+                            "\"" + pageId + "-v1\"",
+                            userId));
 
-        PageValidationException exception = assertThrows(
-                PageValidationException.class,
-                () -> pageService.update(
-                        pageId,
-                        request,
-                        "\"" + pageId + "-v1\"",
-                        userId));
+    assertEquals(
+            "content must not be null",
+            exception.getMessage());
 
-        assertEquals(
-                "content must not be null",
-                exception.getMessage());
+    verify(pageRepository, never())
+            .saveAndFlush(any(Page.class));
+}
 
-        verify(pageRepository, never())
-                .saveAndFlush(any(Page.class));
-    }
+@Test
+void shouldThrow412WhenOptimisticLockFails() {
 
-    @Test
-    void shouldThrow412WhenOptimisticLockFails() {
+    Page page = createPage();
 
-        Page page = createPage();
+    UpdatePageRequest request = new UpdatePageRequest();
 
-        UpdatePageRequest request = new UpdatePageRequest();
+    request.setContent("Updated content");
 
-        request.setContent("Updated content");
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    when(pageRepository.saveAndFlush(page))
+            .thenThrow(
+                    new ObjectOptimisticLockingFailureException(
+                            Page.class,
+                            pageId));
 
-        when(pageRepository.saveAndFlush(page))
-                .thenThrow(
-                        new ObjectOptimisticLockingFailureException(
-                                Page.class,
-                                pageId));
+    Page currentPage = createPage();
+    currentPage.setVersion(2);
 
-        Page currentPage = createPage();
-        currentPage.setVersion(2);
+    when(pageRepository.findById(pageId))
+            .thenReturn(
+                    Optional.of(page),
+                    Optional.of(currentPage));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(
-                        Optional.of(page),
-                        Optional.of(currentPage));
+    PagePreconditionFailedException exception =
+            assertThrows(
+                    PagePreconditionFailedException.class,
+                    () -> pageService.update(
+                            pageId,
+                            request,
+                            "\"" + pageId + "-v1\"",
+                            userId));
 
-        PagePreconditionFailedException exception = assertThrows(
-                PagePreconditionFailedException.class,
-                () -> pageService.update(
-                        pageId,
-                        request,
-                        "\"" + pageId + "-v1\"",
-                        userId));
+    assertEquals(
+            pageId,
+            exception.getPageId());
 
-        assertEquals(
-                pageId,
-                exception.getPageId());
+    assertEquals(
+            2,
+            exception.getCurrentVersion());
+}
 
-        assertEquals(
-                2,
-                exception.getCurrentVersion());
-    }
+@Test
+void shouldDeletePage() {
 
-    @Test
-    void shouldDeletePage() {
+    Page page = createPage();
 
-        Page page = createPage();
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    doNothing()
+            .when(pageRepository)
+            .delete(page);
 
-        doNothing()
-                .when(pageRepository)
-                .delete(page);
+    doNothing()
+            .when(pageRepository)
+            .flush();
 
-        doNothing()
-                .when(pageRepository)
-                .flush();
+    assertDoesNotThrow(
+            () -> pageService.delete(pageId));
 
-        assertDoesNotThrow(
-                () -> pageService.delete(pageId));
+    verify(pageRepository).findById(pageId);
+    verify(pageRepository).delete(page);
+    verify(pageRepository).flush();
+}
 
-        verify(pageRepository).findById(pageId);
-        verify(pageRepository).delete(page);
-        verify(pageRepository).flush();
-    }
+@Test
+void shouldThrowWhenDeletingUnknownPage() {
 
-    @Test
-    void shouldThrowWhenDeletingUnknownPage() {
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.empty());
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.empty());
+    assertThrows(
+            PageNotFoundException.class,
+            () -> pageService.delete(pageId));
 
-        assertThrows(
-                PageNotFoundException.class,
-                () -> pageService.delete(pageId));
+    verify(pageRepository, never())
+            .delete(any(Page.class));
+}
 
-        verify(pageRepository, never())
-                .delete(any(Page.class));
-    }
+@Test
+void shouldThrowConflictWhenDeleteFailsBecauseOfReference() {
 
-    @Test
-    void shouldThrowConflictWhenDeleteFailsBecauseOfReference() {
+    Page page = createPage();
 
-        Page page = createPage();
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    doThrow(
+            new DataIntegrityViolationException(
+                    "foreign key violation"))
+            .when(pageRepository)
+            .flush();
 
-        doThrow(
-                new DataIntegrityViolationException(
-                        "foreign key violation"))
-                .when(pageRepository)
-                .flush();
+    PageConflictException exception =
+            assertThrows(
+                    PageConflictException.class,
+                    () -> pageService.delete(pageId));
 
-        PageConflictException exception = assertThrows(
-                PageConflictException.class,
-                () -> pageService.delete(pageId));
+    assertEquals(
+            "Page cannot be deleted because it is referenced",
+            exception.getMessage());
+}
 
-        assertEquals(
-                "Page cannot be deleted because it is referenced",
-                exception.getMessage());
-    }
+@Test
+void shouldFindCurrentVersion() {
 
-    @Test
-    void shouldFindCurrentVersion() {
+    Page page = createPage();
+    page.setVersion(7);
 
-        Page page = createPage();
-        page.setVersion(7);
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.of(page));
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.of(page));
+    int version = pageService.findCurrentVersion(pageId);
 
-        int version = pageService.findCurrentVersion(pageId);
+    assertEquals(7, version);
+}
 
-        assertEquals(7, version);
-    }
+@Test
+void shouldThrowWhenFindingVersionOfUnknownPage() {
 
-    @Test
-    void shouldThrowWhenFindingVersionOfUnknownPage() {
+    when(pageRepository.findById(pageId))
+            .thenReturn(Optional.empty());
 
-        when(pageRepository.findById(pageId))
-                .thenReturn(Optional.empty());
+    assertThrows(
+            PageNotFoundException.class,
+            () -> pageService.findCurrentVersion(pageId));
+}
 
-        assertThrows(
-                PageNotFoundException.class,
-                () -> pageService.findCurrentVersion(pageId));
-    }
+@Test
+void shouldCreateEtag() {
 
-    @Test
-    void shouldCreateEtag() {
+    PageResponse response = new PageResponse(
+            pageId,
+            "Getting started",
+            "getting-started",
+            "# Welcome",
+            3,
+            folderId,
+            userId,
+            null,
+            Instant.now(),
+            Instant.now());
 
-        PageResponse response = new PageResponse(
-                pageId,
-                "Getting started",
-                "getting-started",
-                "# Welcome",
-                3,
-                folderId,
-                userId,
-                null,
-                Instant.now(),
-                Instant.now());
+    String etag = pageService.createEtag(response);
 
-        String etag = pageService.createEtag(response);
+    assertEquals(
+            "\"" + pageId + "-v3\"",
+            etag);
+}
 
-        assertEquals(
-                "\"" + pageId + "-v3\"",
-                etag);
-    }
+private Page createPage() {
 
-    private Page createPage() {
+    Page page = new Page();
 
-        Page page = new Page();
+    page.setId(pageId);
+    page.setTitle("Getting started");
+    page.setSlug("getting-started");
+    page.setContent("# Welcome");
+    page.setVersion(1);
+    page.setFolderId(folderId);
+    page.setCreatedBy(userId);
+    page.setUpdatedBy(null);
+    page.setCreatedAt(Instant.now());
+    page.setUpdatedAt(Instant.now());
 
-        page.setId(pageId);
-        page.setTitle("Getting started");
-        page.setSlug("getting-started");
-        page.setContent("# Welcome");
-        page.setVersion(1);
-        page.setFolderId(folderId);
-        page.setCreatedBy(userId);
-        page.setUpdatedBy(null);
-        page.setCreatedAt(Instant.now());
-        page.setUpdatedAt(Instant.now());
+    return page;
+}
 
-        return page;
-    }
+private Folder mockFolder() {
+    return new Folder();
+}
 
-    private Folder mockFolder() {
-        return new Folder();
-    }
 }

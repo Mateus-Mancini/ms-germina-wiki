@@ -2,6 +2,7 @@ package com.wikigerminare.pages.wikilinks;
 
 import com.wikigerminare.pages.Page;
 import com.wikigerminare.pages.PageRepository;
+import com.wikigerminare.pages.wikilinks.dto.LinkedPageSummary;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,11 +34,15 @@ public class WikiLinkService {
     @Transactional
     public void reconcile(UUID sourcePageId, String markdown) {
 
-        Page sourcePage = pageRepository.findById(sourcePageId)
+        pageRepository.findById(sourcePageId)
                 .orElseThrow(() ->
                         new IllegalArgumentException(
                                 "Source page not found: " + sourcePageId
                         ));
+
+        pageLinkRepository.acquireWikiLinkLock(
+                "wikilinks:source:" + sourcePageId
+        );
 
         Set<String> desiredSlugs =
                 new LinkedHashSet<>(
@@ -51,7 +56,8 @@ public class WikiLinkService {
 
             pageRepository.findBySlug(slug)
                     .ifPresent(target ->
-                            resolvedTargets.put(slug, target));
+                            resolvedTargets.put(slug, target)
+                    );
         }
 
         Set<String> desiredTitles =
@@ -95,5 +101,83 @@ public class WikiLinkService {
 
             pageLinkRepository.save(pageLink);
         }
+    }
+
+    @Transactional
+    public void resolvePendingLinks(
+            String targetPageSlug,
+            UUID targetPageId
+    ) {
+
+        pageLinkRepository.acquireWikiLinkLock(
+                "wikilinks:target:" + targetPageSlug
+        );
+
+        List<PageLink> pendingLinks =
+                pageLinkRepository
+                        .findByTargetPageIdIsNullAndTargetPageTitle(
+                                targetPageSlug
+                        );
+
+        for (PageLink pageLink : pendingLinks) {
+
+            if (pageLink.getTargetPageId() != null) {
+                continue;
+            }
+
+            pageLink.setTargetPageId(targetPageId);
+
+            pageLinkRepository.save(pageLink);
+        }
+    }
+
+    /**
+     * Retorna as páginas apontadas pelos WikiLinks
+     * de uma página de origem.
+     */
+    @Transactional(readOnly = true)
+    public List<LinkedPageSummary> getOutgoingLinks(
+            UUID sourcePageId
+    ) {
+
+        pageRepository.findById(sourcePageId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Source page not found: " + sourcePageId
+                        ));
+
+        List<PageLink> links =
+                pageLinkRepository.findBySourcePageId(
+                        sourcePageId
+                );
+
+        Map<UUID, LinkedPageSummary> distinctTargets =
+                new LinkedHashMap<>();
+
+        for (PageLink link : links) {
+
+            UUID targetPageId =
+                    link.getTargetPageId();
+
+            if (targetPageId == null) {
+                continue;
+            }
+
+            pageRepository.findById(targetPageId)
+                    .ifPresent(targetPage ->
+                            distinctTargets.putIfAbsent(
+                                    targetPage.getId(),
+                                    new LinkedPageSummary(
+                                            targetPage.getId(),
+                                            targetPage.getTitle(),
+                                            targetPage.getSlug()
+                                    )
+                            )
+                    );
+        }
+
+        return List.copyOf(
+                distinctTargets.values()
+        );
     }
 }

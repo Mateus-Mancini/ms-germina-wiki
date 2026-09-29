@@ -43,7 +43,7 @@ public class Comment {
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "comment_status")
+    @Column(nullable = false)
     private Status status;
 
     @Column(name = "created_at", nullable = false)

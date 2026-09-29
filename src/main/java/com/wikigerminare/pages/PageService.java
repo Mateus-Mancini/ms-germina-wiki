@@ -5,6 +5,7 @@ import com.wikigerminare.folders.FolderRepository;
 import com.wikigerminare.pages.dto.CreatePageRequest;
 import com.wikigerminare.pages.dto.PageResponse;
 import com.wikigerminare.pages.dto.UpdatePageRequest;
+import com.wikigerminare.pages.wikilinks.WikiLinkService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -19,13 +20,16 @@ public class PageService {
 
     private final PageRepository pageRepository;
     private final FolderRepository folderRepository;
+    private final WikiLinkService wikiLinkService;
 
     public PageService(
             PageRepository pageRepository,
-            FolderRepository folderRepository
+            FolderRepository folderRepository,
+            WikiLinkService wikiLinkService
     ) {
         this.pageRepository = pageRepository;
         this.folderRepository = folderRepository;
+        this.wikiLinkService = wikiLinkService;
     }
 
     @Transactional
@@ -57,6 +61,27 @@ public class PageService {
         try {
 
             Page savedPage = pageRepository.save(page);
+
+            /*
+             * Depois que a página foi persistida, seus WikiLinks
+             * podem ser resolvidos contra as páginas existentes.
+             *
+             * O conteúdo Markdown original permanece inalterado.
+             */
+            wikiLinkService.reconcile(
+                    savedPage.getId(),
+                    savedPage.getContent()
+            );
+
+            /*
+             * A página recém-criada também pode ser o destino
+             * de WikiLinks que anteriormente apontavam para um
+             * slug inexistente.
+             */
+            wikiLinkService.resolvePendingLinks(
+                    savedPage.getSlug(),
+                    savedPage.getId()
+            );
 
             return toResponse(savedPage);
 

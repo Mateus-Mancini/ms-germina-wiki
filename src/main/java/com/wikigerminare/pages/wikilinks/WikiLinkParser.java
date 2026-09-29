@@ -1,96 +1,71 @@
 package com.wikigerminare.pages.wikilinks;
 
-import org.springframework.stereotype.Component;
-
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.stereotype.Component;
+
 @Component
 public class WikiLinkParser {
 
-    private static final Pattern WIKILINK_PATTERN =
-            Pattern.compile("\\[\\[([^\\[\\]\\n]+)\\]\\]");
+    private static final Pattern WIKI_LINK_PATTERN =
+            Pattern.compile("\\[\\[([^\\[\\]]+)\\]\\]");
 
-    public Set<String> extractSlugs(String markdown) {
+    public Set<String> extractSlugs(String content) {
 
         Set<String> slugs = new LinkedHashSet<>();
 
-        if (markdown == null || markdown.isEmpty()) {
+        if (content == null || content.isEmpty()) {
             return slugs;
         }
 
-        String withoutCode = removeCodeBlocks(markdown);
+        boolean fencedCode = false;
 
-        Matcher matcher = WIKILINK_PATTERN.matcher(withoutCode);
-
-        while (matcher.find()) {
-
-            String slug = matcher.group(1);
-
-            if (slug.contains("|")) {
-                continue;
-            }
-
-            if (slug.isBlank()) {
-                continue;
-            }
-
-            slugs.add(slug);
-        }
-
-        return slugs;
-    }
-
-    private String removeCodeBlocks(String markdown) {
-
-        StringBuilder result = new StringBuilder();
-
-        String[] lines = markdown.split("\\R", -1);
-
-        boolean insideFence = false;
+        String[] lines = content.split("\\R", -1);
 
         for (String line : lines) {
 
             String trimmed = line.trim();
 
             if (trimmed.startsWith("```")) {
-                insideFence = !insideFence;
-                result.append("\n");
+                fencedCode = !fencedCode;
                 continue;
             }
 
-            if (insideFence) {
-                result.append("\n");
-            } else {
-                result.append(removeInlineCode(line));
-                result.append("\n");
+            if (fencedCode) {
+                continue;
+            }
+
+            String withoutInlineCode = removeInlineCode(line);
+
+            Matcher matcher = WIKI_LINK_PATTERN.matcher(withoutInlineCode);
+
+            while (matcher.find()) {
+                slugs.add(matcher.group(1));
             }
         }
 
-        return result.toString();
+        return slugs;
     }
 
     private String removeInlineCode(String line) {
 
         StringBuilder result = new StringBuilder();
 
-        boolean insideInlineCode = false;
+        boolean insideCode = false;
 
         for (int i = 0; i < line.length(); i++) {
 
             char current = line.charAt(i);
 
             if (current == '`') {
-                insideInlineCode = !insideInlineCode;
-                result.append(' ');
+                insideCode = !insideCode;
                 continue;
             }
 
-            if (insideInlineCode) {
-                result.append(' ');
-            } else {
+            if (!insideCode) {
                 result.append(current);
             }
         }

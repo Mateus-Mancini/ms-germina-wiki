@@ -40,8 +40,52 @@ public class PageExceptionHandler {
                 .body(errorBody(exception.getMessage()));
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ExceptionHandler(PageValidationException.class)
     public ResponseEntity<Map<String, String>> handleValidation(
+            PageValidationException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorBody(exception.getMessage()));
+    }
+
+    @ExceptionHandler(PageBadRequestException.class)
+    public ResponseEntity<Map<String, String>> handleBadRequest(
+            PageBadRequestException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorBody(exception.getMessage()));
+    }
+
+    @ExceptionHandler(PagePreconditionRequiredException.class)
+    public ResponseEntity<Map<String, String>> handlePreconditionRequired(
+            PagePreconditionRequiredException exception
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.PRECONDITION_REQUIRED)
+                .body(errorBody(exception.getMessage()));
+    }
+
+    @ExceptionHandler(PagePreconditionFailedException.class)
+    public ResponseEntity<Map<String, String>> handlePreconditionFailed(
+            PagePreconditionFailedException exception
+    ) {
+        Map<String, String> body = new HashMap<>();
+
+        body.put("error", exception.getMessage());
+        body.put(
+                "currentVersion",
+                String.valueOf(exception.getCurrentVersion())
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.PRECONDITION_FAILED)
+                .body(body);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleMethodArgumentValidation(
             MethodArgumentNotValidException exception
     ) {
         String message = exception.getBindingResult()

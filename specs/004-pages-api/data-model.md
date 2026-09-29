@@ -40,3 +40,4 @@
 - `UpdatePageRequest`: one or both of `title`, `content`; no `slug`, `folderId`, or version field. Expected version is carried by a single strong `If-Match` header.
 - `PageResponse`: `id`, `title`, `slug`, raw `content`, nullable `folderId`, `createdBy`, nullable `updatedBy`, `createdAt`, `updatedAt`, and numeric `version`.
 - HTTP ETag: strong tag derived from page UUID and version, emitted on create, individual read and successful update. List items expose numeric version in JSON; collection ETag is not an item's ETag.
+

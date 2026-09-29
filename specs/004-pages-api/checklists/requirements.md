@@ -35,3 +35,4 @@
 - As decisões sobre a versão numérica, o protocolo `ETag`/`If-Match` e a imutabilidade de `folderId` estão registradas em `spec.md`.
 - O plano deve confirmar no PostgreSQL o nome, tipo, nulabilidade e valor/default inicial da coluna numérica antes do mapeamento/implementação; não criar DDL.
 - A tabela, os nomes, limites e nulabilidade reais de `pages` não estão presentes no repositório; a especificação proíbe DDL e substituição do banco.
+

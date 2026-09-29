@@ -17,6 +17,8 @@ import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.wikigerminare.dto.ReadinessStatus;
+import com.amazonaws.serverless.proxy.model.HttpApiV2ProxyRequest;
+import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler;
 
 /**
  * Warms the request path right before the SnapStart snapshot, so class loading and JIT happen when a
@@ -34,7 +36,8 @@ public class SnapStartPriming implements Resource {
 
 	private final SpringBootLambdaContainerHandler<HttpApiV2ProxyRequest, AwsProxyResponse> handler;
 
-	public SnapStartPriming(SpringBootLambdaContainerHandler<HttpApiV2ProxyRequest, AwsProxyResponse> handler) {
+	public SnapStartPriming(
+			SpringBootLambdaContainerHandler<HttpApiV2ProxyRequest, AwsProxyResponse> handler) {
 		this.handler = handler;
 	}
 
@@ -76,13 +79,15 @@ public class SnapStartPriming implements Resource {
 		request.setRawPath(PRIMING_PATH);
 		request.setHeaders(Map.of("accept", "application/json"));
 		request.setRequestContext(requestContext);
+
 		return request;
 	}
 
 	/**
 	 * Minimal Lambda context for the synthetic priming invocation.
 	 */
-	private static final class PrimingContext implements com.amazonaws.services.lambda.runtime.Context {
+	private static final class PrimingContext
+			implements com.amazonaws.services.lambda.runtime.Context {
 
 		@Override
 		public String getAwsRequestId() {

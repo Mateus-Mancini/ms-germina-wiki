@@ -48,3 +48,4 @@ Use an API client authenticated by the host infrastructure. Example requests bel
 - `412 Precondition Failed`: a valid strong ETag is stale; response reports the latest version after rollback.
 - `428 Precondition Required`: PATCH omitted `If-Match`.
 - `409 Conflict`: PostgreSQL's existing FK rules prevent deletion.
+

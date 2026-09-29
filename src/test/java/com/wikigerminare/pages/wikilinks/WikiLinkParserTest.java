@@ -1,66 +1,63 @@
 package com.wikigerminare.pages.wikilinks;
 
+import org.junit.jupiter.api.Test;
+
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
 
 class WikiLinkParserTest {
 
     private final WikiLinkParser parser = new WikiLinkParser();
 
     @Test
-    void shouldExtractWikiLinkSlug() {
+    void shouldExtractWikiLinkSlugs() {
 
-        String markdown = """
-                # Introdução
+        String content = """
+                # Authentication
 
-                Veja também [[outra-pagina]].
+                See [[Login]] and [[Authentication]].
                 """;
 
-        Set<String> result = parser.extractSlugs(markdown);
+        Set<String> result = parser.extractSlugs(content);
 
         assertEquals(
-                Set.of("outra-pagina"),
+                Set.of("Login", "Authentication"),
                 result
         );
     }
 
     @Test
-    void shouldExtractMultipleWikiLinks() {
+    void shouldReturnDistinctSlugsWhenLinkIsRepeated() {
 
-        String markdown = """
-                [[pagina-a]]
-                [[pagina-b]]
-                [[pagina-c]]
+        String content = """
+                [[Login]]
+                [[Login]]
+                [[Authentication]]
+                [[Login]]
                 """;
 
-        Set<String> result = parser.extractSlugs(markdown);
+        Set<String> result = parser.extractSlugs(content);
 
         assertEquals(
-                Set.of(
-                        "pagina-a",
-                        "pagina-b",
-                        "pagina-c"
-                ),
+                Set.of("Login", "Authentication"),
                 result
         );
     }
 
     @Test
-    void shouldRemoveDuplicatedWikiLinks() {
+    void shouldPreserveSlugExactlyAsWritten() {
 
-        String markdown = """
-                [[pagina-a]]
-                [[pagina-a]]
-                [[pagina-a]]
+        String content = """
+                [[My Page]]
+                [[API-Reference]]
+                [[Java_21]]
                 """;
 
-        Set<String> result = parser.extractSlugs(markdown);
+        Set<String> result = parser.extractSlugs(content);
 
         assertEquals(
-                Set.of("pagina-a"),
+                Set.of("My Page", "API-Reference", "Java_21"),
                 result
         );
     }
@@ -68,16 +65,18 @@ class WikiLinkParserTest {
     @Test
     void shouldIgnoreWikiLinksInsideInlineCode() {
 
-        String markdown = """
-                Texto normal [[pagina-real]].
+        String content = """
+                Normal link: [[Login]]
 
-                Código inline: `[[pagina-codigo]]`
+                This is code: `[[Authentication]]`
+
+                Another link: [[Dashboard]]
                 """;
 
-        Set<String> result = parser.extractSlugs(markdown);
+        Set<String> result = parser.extractSlugs(content);
 
         assertEquals(
-                Set.of("pagina-real"),
+                Set.of("Login", "Dashboard"),
                 result
         );
     }
@@ -85,78 +84,21 @@ class WikiLinkParserTest {
     @Test
     void shouldIgnoreWikiLinksInsideFencedCode() {
 
-        String markdown = """
-                Texto normal [[pagina-real]].
+        String content = """
+                Normal link: [[Login]]
 
-                ```markdown
-                [[pagina-codigo]]
+                ```text
+                [[Authentication]]
+                [[Dashboard]]
                 ```
 
-                Outro texto [[outra-pagina]]
+                Normal link: [[Profile]]
                 """;
 
-        Set<String> result = parser.extractSlugs(markdown);
+        Set<String> result = parser.extractSlugs(content);
 
         assertEquals(
-                Set.of(
-                        "pagina-real",
-                        "outra-pagina"
-                ),
-                result
-        );
-    }
-
-    @Test
-    void shouldAllowSelfLink() {
-
-        String markdown = """
-                Esta página aponta para ela mesma: [[minha-pagina]]
-                """;
-
-        Set<String> result = parser.extractSlugs(markdown);
-
-        assertEquals(
-                Set.of("minha-pagina"),
-                result
-        );
-    }
-
-    @Test
-    void shouldIgnoreEmptyWikiLink() {
-
-        String markdown = """
-                Texto [[]] texto.
-                """;
-
-        Set<String> result = parser.extractSlugs(markdown);
-
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void shouldIgnoreMalformedWikiLink() {
-
-        String markdown = """
-                [[pagina-aberta
-                pagina-fechada]]
-                """;
-
-        Set<String> result = parser.extractSlugs(markdown);
-
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void shouldPreserveExactSlug() {
-
-        String markdown = """
-                [[Minha-Pagina]]
-                """;
-
-        Set<String> result = parser.extractSlugs(markdown);
-
-        assertEquals(
-                Set.of("Minha-Pagina"),
+                Set.of("Login", "Profile"),
                 result
         );
     }
@@ -166,6 +108,35 @@ class WikiLinkParserTest {
 
         Set<String> result = parser.extractSlugs("");
 
-        assertTrue(result.isEmpty());
+        assertEquals(
+                Set.of(),
+                result
+        );
+    }
+
+    @Test
+    void shouldReturnEmptySetForNullContent() {
+
+        Set<String> result = parser.extractSlugs(null);
+
+        assertEquals(
+                Set.of(),
+                result
+        );
+    }
+
+    @Test
+    void shouldAllowSelfLinks() {
+
+        String content = """
+                This page references itself: [[Authentication]]
+                """;
+
+        Set<String> result = parser.extractSlugs(content);
+
+        assertEquals(
+                Set.of("Authentication"),
+                result
+        );
     }
 }

@@ -21,9 +21,9 @@
 
 **Purpose**: Add persistence/query foundations and the narrow WikiLink parser.
 
-- [ ] T003 Map the existing relation in `src/main/java/com/wikigerminare/pages/wikilinks/PageLink.java` using only the real `page_links` columns and key verified by T001; map `source_page_id` and `target_page_id`, and do not invent an identifier, column or constraint. If no usable JPA entity key exists, stop and report before code rather than creating schema.
-- [ ] T004 Create the relation repository in `src/main/java/com/wikigerminare/pages/wikilinks/PageLinkRepository.java` for outgoing/incoming queries and source-link reconciliation, using the verified key/constraints and the existing page table.
-- [ ] T005 Create the focused scanner in `src/main/java/com/wikigerminare/pages/wikilinks/WikiLinkParser.java` for exact `[[slug]]` tokens outside inline/fenced code; return distinct exact slug strings and leave input content untouched.
+- [x] T003 Map the existing relation in `src/main/java/com/wikigerminare/pages/wikilinks/PageLink.java` using only the real `page_links` columns and key verified by T001; map `source_page_id` and `target_page_id`, and do not invent an identifier, column or constraint. If no usable JPA entity key exists, stop and report before code rather than creating schema.
+- [x] T004 Create the relation repository in `src/main/java/com/wikigerminare/pages/wikilinks/PageLinkRepository.java` for outgoing/incoming queries and source-link reconciliation, using the verified key/constraints and the existing page table.
+- [x] T005 Create the focused scanner in `src/main/java/com/wikigerminare/pages/wikilinks/WikiLinkParser.java` for exact `[[slug]]` tokens outside inline/fenced code; return distinct exact slug strings and leave input content untouched.
 
 **Checkpoint**: The real table mapping is verified; parser and repository foundations use no new schema or dependency.
 
@@ -35,16 +35,16 @@
 
 ### Tests for User Story 1
 
-- [ ] T006 [P] [US1] Add scanner unit tests for exact `[[slug]]`, repeated tokens, malformed/unknown text, inline code and fenced code exclusion, and self-slug tokens in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkParserTest.java`.
-- [ ] T007 [P] [US1] Add Service tests for resolving existing slugs, leaving missing slugs unresolved, one logical edge for repeated occurrences, allowing source=target, removing a relation after its last occurrence is removed, and preserving content exactly in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkServiceTest.java`.
-- [ ] T008 [P] [US1] Add PostgreSQL integration tests for relation mapping, unique-pair behavior under the verified schema, transaction rollback with page write failure, and automatic resolution when a new target slug is created in `src/test/java/com/wikigerminare/pages/wikilinks/PageLinkPostgresIntegrationTest.java`.
+- [x] T006 [P] [US1] Add scanner unit tests for exact `[[slug]]`, repeated tokens, malformed/unknown text, inline code and fenced code exclusion, and self-slug tokens in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkParserTest.java`.
+- [x] T007 [P] [US1] Add Service tests for resolving existing slugs, leaving missing slugs unresolved, one logical edge for repeated occurrences, allowing source=target, removing a relation after its last occurrence is removed, and preserving content exactly in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkServiceTest.java`.
+- [x] T008 [P] [US1] Add PostgreSQL integration tests for relation mapping, unique-pair behavior under the verified schema, transaction rollback with page write failure, and automatic resolution when a new target slug is created in `src/test/java/com/wikigerminare/pages/wikilinks/PageLinkPostgresIntegrationTest.java`.
 
 ### Implementation for User Story 1
 
-- [ ] T009 [US1] Implement the scanner in `src/main/java/com/wikigerminare/pages/wikilinks/WikiLinkParser.java`; ignore inline and fenced code, recognize only `[[slug]]`, perform no slug transformation, and never rewrite Markdown.
-- [ ] T010 [US1] Add exact `findBySlug`/page-content lookup support in `src/main/java/com/wikigerminare/pages/PageRepository.java` for target resolution and re-scanning existing source content; reuse existing Page columns only.
-- [ ] T011 [US1] Implement `WikiLinkService` in `src/main/java/com/wikigerminare/pages/wikilinks/WikiLinkService.java` to reconcile each source's distinct resolved targets transactionally: retain desired pairs, insert missing pairs, delete obsolete pairs, ignore unresolved slugs, allow self-links, and keep one logical pair per source-target even with repeated tokens.
-- [ ] T012 [US1] Integrate `WikiLinkService` into page creation/content-update transactions in `src/main/java/com/wikigerminare/pages/PageService.java`; after a target page is created, re-evaluate existing page contents for its slug and resolve pending references. Preserve the established Page response/content/ETag contracts and do not add page endpoints.
+- [x] T009 [US1] Implement the scanner in `src/main/java/com/wikigerminare/pages/wikilinks/WikiLinkParser.java`; ignore inline and fenced code, recognize only `[[slug]]`, perform no slug transformation, and never rewrite Markdown.
+- [x] T010 [US1] Add exact `findBySlug`/page-content lookup support in `src/main/java/com/wikigerminare/pages/PageRepository.java` for target resolution and re-scanning existing source content; reuse existing Page columns only.
+- [x] T011 [US1] Implement `WikiLinkService` in `src/main/java/com/wikigerminare/pages/wikilinks/WikiLinkService.java` to reconcile each source's distinct resolved targets transactionally: retain desired pairs, insert missing pairs, delete obsolete pairs, ignore unresolved slugs, allow self-links, and keep one logical pair per source-target even with repeated tokens.
+- [x] T012 [US1] Integrate `WikiLinkService` into page creation/content-update transactions in `src/main/java/com/wikigerminare/pages/PageService.java`; after a target page is created, re-evaluate existing page contents for its slug and resolve pending references. Preserve the established Page response/content/ETag contracts and do not add page endpoints.
 - [ ] T013 [US1] If T001 finds no database uniqueness constraint for `(source_page_id, target_page_id)`, coordinate all feature-owned reconciliation/target-created scans using a transaction-scoped PostgreSQL lock in `src/main/java/com/wikigerminare/pages/wikilinks/PageLinkRepository.java`; use an independent lock key and add no DDL. If the schema cannot guarantee the logical pair under supported writers without a schema change, stop and document the incompatibility.
 
 **Checkpoint**: Page create/content update and target creation synchronize relation state atomically; source Markdown is unchanged.

@@ -45,7 +45,7 @@
 - [x] T010 [US1] Add exact `findBySlug`/page-content lookup support in `src/main/java/com/wikigerminare/pages/PageRepository.java` for target resolution and re-scanning existing source content; reuse existing Page columns only.
 - [x] T011 [US1] Implement `WikiLinkService` in `src/main/java/com/wikigerminare/pages/wikilinks/WikiLinkService.java` to reconcile each source's distinct resolved targets transactionally: retain desired pairs, insert missing pairs, delete obsolete pairs, ignore unresolved slugs, allow self-links, and keep one logical pair per source-target even with repeated tokens.
 - [x] T012 [US1] Integrate `WikiLinkService` into page creation/content-update transactions in `src/main/java/com/wikigerminare/pages/PageService.java`; after a target page is created, re-evaluate existing page contents for its slug and resolve pending references. Preserve the established Page response/content/ETag contracts and do not add page endpoints.
-- [ ] T013 [US1] If T001 finds no database uniqueness constraint for `(source_page_id, target_page_id)`, coordinate all feature-owned reconciliation/target-created scans using a transaction-scoped PostgreSQL lock in `src/main/java/com/wikigerminare/pages/wikilinks/PageLinkRepository.java`; use an independent lock key and add no DDL. If the schema cannot guarantee the logical pair under supported writers without a schema change, stop and document the incompatibility.
+- [x] T013 [US1] If T001 finds no database uniqueness constraint for `(source_page_id, target_page_id)`, coordinate all feature-owned reconciliation/target-created scans using a transaction-scoped PostgreSQL lock in `src/main/java/com/wikigerminare/pages/wikilinks/PageLinkRepository.java`; use an independent lock key and add no DDL. If the schema cannot guarantee the logical pair under supported writers without a schema change, stop and document the incompatibility.
 
 **Checkpoint**: Page create/content update and target creation synchronize relation state atomically; source Markdown is unchanged.
 
@@ -57,13 +57,13 @@
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Add Service/repository tests for outgoing target lookup, empty results, self-link and duplicate-row suppression in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkServiceTest.java`.
-- [ ] T015 [P] [US2] Add MVC tests for `GET /api/pages/{pageId}/wikilinks`, covering `200`, empty array, malformed UUID `400`, missing Page `404`, and one summary per target in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkControllerTest.java`.
+- [x] T014 [P] [US2] Add Service/repository tests for outgoing target lookup, empty results, self-link and duplicate-row suppression in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkServiceTest.java`.
+- [x] T015 [P] [US2] Add MVC tests for `GET /api/pages/{pageId}/wikilinks`, covering `200`, empty array, malformed UUID `400`, missing Page `404`, and one summary per target in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkControllerTest.java`.
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Create `LinkedPageSummary` in `src/main/java/com/wikigerminare/pages/wikilinks/dto/LinkedPageSummary.java` with existing Page fields `id`, `title`, and `slug` only.
-- [ ] T017 [US2] Add outgoing-link query behavior to `WikiLinkService` and expose `GET /api/pages/{pageId}/wikilinks` in `src/main/java/com/wikigerminare/pages/wikilinks/WikiLinkController.java`; verify the requested Page exists and return a distinct list of linked target summaries or `404`.
+- [x] T016 [US2] Create `LinkedPageSummary` in `src/main/java/com/wikigerminare/pages/wikilinks/dto/LinkedPageSummary.java` with existing Page fields `id`, `title`, and `slug` only.
+- [x] T017 [US2] Add outgoing-link query behavior to `WikiLinkService` and expose `GET /api/pages/{pageId}/wikilinks` in `src/main/java/com/wikigerminare/pages/wikilinks/WikiLinkController.java`; verify the requested Page exists and return a distinct list of linked target summaries or `404`.
 
 **Checkpoint**: Outgoing endpoint matches the OpenAPI contract and returns `200 []` for an existing page with no resolved links.
 
@@ -75,9 +75,9 @@
 
 ### Tests for User Story 3
 
-- [ ] T018 [P] [US3] Add Service/repository tests for incoming-link lookup, empty results, self-link, distinct source pages, and target-null rows excluded from active backlinks in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkServiceTest.java`.
-- [ ] T019 [P] [US3] Add MVC tests for `GET /api/pages/{pageId}/backlinks`, covering `200`, empty array, malformed UUID `400`, missing Page `404`, and one summary per source in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkControllerTest.java`.
-- [ ] T020 [P] [US3] Add PostgreSQL integration coverage that source deletion cascades outgoing relations and target deletion nulls `target_page_id`, without application-side cascade, in `src/test/java/com/wikigerminare/pages/wikilinks/PageLinkPostgresIntegrationTest.java`.
+- [x] T018 [P] [US3] Add Service/repository tests for incoming-link lookup, empty results, self-link, distinct source pages, and target-null rows excluded from active backlinks in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkServiceTest.java`.
+- [x] T019 [P] [US3] Add MVC tests for `GET /api/pages/{pageId}/backlinks`, covering `200`, empty array, malformed UUID `400`, missing Page `404`, and one summary per source in `src/test/java/com/wikigerminare/pages/wikilinks/WikiLinkControllerTest.java`.
+- [x] T020 [P] [US3] Add PostgreSQL integration coverage that source deletion cascades outgoing relations and target deletion nulls `target_page_id`, without application-side cascade, in `src/test/java/com/wikigerminare/pages/wikilinks/PageLinkPostgresIntegrationTest.java`.
 
 ### Implementation for User Story 3
 

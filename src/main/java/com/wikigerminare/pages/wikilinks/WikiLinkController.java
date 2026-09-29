@@ -22,6 +22,10 @@ public class WikiLinkController {
         this.wikiLinkService = wikiLinkService;
     }
 
+    /**
+     * Retorna as páginas apontadas pelos WikiLinks
+     * de uma página de origem.
+     */
     @GetMapping("/{pageId}/wikilinks")
     public ResponseEntity<List<LinkedPageSummary>> getOutgoingLinks(
             @PathVariable UUID pageId
@@ -29,6 +33,20 @@ public class WikiLinkController {
 
         return ResponseEntity.ok(
                 wikiLinkService.getOutgoingLinks(pageId)
+        );
+    }
+
+    /**
+     * Retorna as páginas que possuem WikiLinks
+     * apontando para a página informada.
+     */
+    @GetMapping("/{pageId}/backlinks")
+    public ResponseEntity<List<LinkedPageSummary>> getBacklinks(
+            @PathVariable UUID pageId
+    ) {
+
+        return ResponseEntity.ok(
+                wikiLinkService.getBacklinks(pageId)
         );
     }
 }

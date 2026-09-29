@@ -180,4 +180,57 @@ public class WikiLinkService {
                 distinctTargets.values()
         );
     }
+
+    /**
+     * Retorna as páginas que possuem WikiLinks
+     * apontando para a página informada.
+     *
+     * Relações sem target_page_id são ignoradas,
+     * pois representam links ainda não resolvidos.
+     */
+    @Transactional(readOnly = true)
+    public List<LinkedPageSummary> getBacklinks(
+            UUID targetPageId
+    ) {
+
+        pageRepository.findById(targetPageId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Target page not found: " + targetPageId
+                        ));
+
+        List<PageLink> links =
+                pageLinkRepository.findByTargetPageId(
+                        targetPageId
+                );
+
+        Map<UUID, LinkedPageSummary> distinctSources =
+                new LinkedHashMap<>();
+
+        for (PageLink link : links) {
+
+            UUID sourcePageId =
+                    link.getSourcePageId();
+
+            if (sourcePageId == null) {
+                continue;
+            }
+
+            pageRepository.findById(sourcePageId)
+                    .ifPresent(sourcePage ->
+                            distinctSources.putIfAbsent(
+                                    sourcePage.getId(),
+                                    new LinkedPageSummary(
+                                            sourcePage.getId(),
+                                            sourcePage.getTitle(),
+                                            sourcePage.getSlug()
+                                    )
+                            )
+                    );
+        }
+
+        return List.copyOf(
+                distinctSources.values()
+        );
+    }
 }

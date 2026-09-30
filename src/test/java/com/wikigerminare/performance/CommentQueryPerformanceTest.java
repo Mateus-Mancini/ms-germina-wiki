@@ -15,7 +15,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
+@DataJpaTest(properties = {
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.flyway.enabled=false",
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "spring.jpa.properties.hibernate.boot.allow_jdbc_metadata_access=true"
+})
 class CommentQueryPerformanceTest {
     @Autowired
     private CommentRepository repository;

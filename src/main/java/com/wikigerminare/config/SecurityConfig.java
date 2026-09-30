@@ -10,16 +10,19 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class SecurityConfig {
     @Bean
-    SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
-        return http.csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .anyRequest().authenticated())
-                .build();
-    }
-
-    @Bean
-    RestClient.Builder restClientBuilder() {
-        return RestClient.builder();
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/health",
+                    "/__snapstart-priming",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .build();
     }
 }

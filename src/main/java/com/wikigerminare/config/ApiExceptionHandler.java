@@ -7,10 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.wikigerminare.controller.CommentController;
 import com.wikigerminare.dto.comment.ErrorResponse;
 import com.wikigerminare.service.CommentException;
 
-@RestControllerAdvice
+@RestControllerAdvice(assignableTypes = CommentController.class)
 public class ApiExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleValidation(IllegalArgumentException exception) {

@@ -40,6 +40,7 @@ jobs:
       DB_PASS: ${{ secrets.DB_PASS }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      JWT_SECRET_BASE64: ${{ secrets.JWT_SECRET_BASE64 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -81,7 +82,8 @@ jobs:
             DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" \
             WebAppOrigin="${{ vars.WEB_APP_ORIGIN }}" AlertEmail="${{ vars.ALERT_EMAIL }}" \
             R2AccountId="${{ vars.R2_ACCOUNT_ID }}" R2Bucket="${{ vars.R2_BUCKET }}" \
-            R2AccessKeyId="$R2_ACCESS_KEY_ID" R2SecretAccessKey="$R2_SECRET_ACCESS_KEY"
+            R2AccessKeyId="$R2_ACCESS_KEY_ID" R2SecretAccessKey="$R2_SECRET_ACCESS_KEY" \
+            JwtSecretBase64="$JWT_SECRET_BASE64"
 
       - name: Verify readiness
         id: verify

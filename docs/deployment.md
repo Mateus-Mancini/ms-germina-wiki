@@ -36,13 +36,14 @@ There is also an account-wide `account-safety-net` budget (USD 1), created by ha
    export NEON_PROJECT_ID='...'   # non-secret; for migration rehearsals (npx neonctl projects list)
    export R2_ACCOUNT_ID='...' R2_BUCKET='germinawiki-images'           # image storage (docs/image-storage.md)
    export R2_ACCESS_KEY_ID='...' R2_SECRET_ACCESS_KEY='...'
+   export JWT_SECRET_BASE64='...'                                     # openssl rand -base64 32 (auth tokens)
    ```
 
 **Tools:** JDK 21, Docker, AWS CLI v2, AWS SAM CLI.
 
 ## Runtime configuration
 
-These are the stack parameters (contract: [`runtime-config.md`](../specs/001-backend-hosting/contracts/runtime-config.md)). Pass **all nine** on every deploy: `--parameter-overrides` replaces, not merges, and `samconfig.toml` deliberately holds none.
+These are the stack parameters (contract: [`runtime-config.md`](../specs/001-backend-hosting/contracts/runtime-config.md)). Pass **all ten** required parameters on every deploy (`JwtTtlSeconds` defaults to 900): `--parameter-overrides` replaces, not merges, and `samconfig.toml` deliberately holds none.
 
 | Parameter | Secret | Becomes |
 |---|---|---|
@@ -55,6 +56,8 @@ These are the stack parameters (contract: [`runtime-config.md`](../specs/001-bac
 | `R2Bucket` | no | `APP_STORAGE_BUCKET`: private images bucket (default `germinawiki-images`) |
 | `R2AccessKeyId` | yes | `APP_STORAGE_ACCESS_KEY_ID`: bucket-scoped R2 token |
 | `R2SecretAccessKey` | yes | `APP_STORAGE_SECRET_ACCESS_KEY` |
+| `JwtSecretBase64` | yes | `APP_AUTH_JWT_SECRET_BASE64`: HS256 token signing key (`openssl rand -base64 32`). Rotating it signs everyone out |
+| `JwtTtlSeconds` | no | `APP_AUTH_JWT_TTL_SECONDS`: access token lifetime, default 900 s |
 
 Changing any parameter publishes a new version (`AutoPublishAliasAllProperties`), so config changes reach `live` like code changes.
 
@@ -74,7 +77,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s infra/guard  # guard t
 scripts/smoke-lambda-package.sh              # runs the packaged zip against a throwaway Postgres
 sam deploy --parameter-overrides DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" \
   WebAppOrigin="$WEB_APP_ORIGIN" AlertEmail="$ALERT_EMAIL" \
-  R2AccountId="$R2_ACCOUNT_ID" R2Bucket="$R2_BUCKET" R2AccessKeyId="$R2_ACCESS_KEY_ID" R2SecretAccessKey="$R2_SECRET_ACCESS_KEY"
+  R2AccountId="$R2_ACCOUNT_ID" R2Bucket="$R2_BUCKET" R2AccessKeyId="$R2_ACCESS_KEY_ID" R2SecretAccessKey="$R2_SECRET_ACCESS_KEY" \
+  JwtSecretBase64="$JWT_SECRET_BASE64"
 ```
 
 `sam deploy` shows the CloudFormation change set and asks before applying it (`confirm_changeset = true`). Read it: an API code or config change should show only `ApiFunction` (Modify), a new `ApiFunctionVersion…` (Add), `ApiFunctionAliaslive` (Modify), and the previous version's resource (Delete). That "Delete" only removes it from the template; SAM retains published versions, so rollback still works.

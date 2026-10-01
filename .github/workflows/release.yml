@@ -38,6 +38,8 @@ jobs:
       DB_URL: ${{ secrets.DB_URL }}
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASS: ${{ secrets.DB_PASS }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -77,7 +79,9 @@ jobs:
         run: |
           sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides \
             DbUrl="$DB_URL" DbUsername="$DB_USER" DbPassword="$DB_PASS" \
-            WebAppOrigin="${{ vars.WEB_APP_ORIGIN }}" AlertEmail="${{ vars.ALERT_EMAIL }}"
+            WebAppOrigin="${{ vars.WEB_APP_ORIGIN }}" AlertEmail="${{ vars.ALERT_EMAIL }}" \
+            R2AccountId="${{ vars.R2_ACCOUNT_ID }}" R2Bucket="${{ vars.R2_BUCKET }}" \
+            R2AccessKeyId="$R2_ACCESS_KEY_ID" R2SecretAccessKey="$R2_SECRET_ACCESS_KEY"
 
       - name: Verify readiness
         id: verify

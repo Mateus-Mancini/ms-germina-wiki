@@ -1,11 +1,13 @@
 package com.wikigerminare.lambda;
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.crac.Context;
 import org.crac.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
 import com.amazonaws.serverless.proxy.model.AwsProxyResponse;
@@ -17,16 +19,15 @@ import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.wikigerminare.dto.ReadinessStatus;
-import com.amazonaws.serverless.proxy.model.HttpApiV2ProxyRequest;
-import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler;
+import com.wikigerminare.storage.ObjectStorage;
 
 /**
  * Warms the request path right before the SnapStart snapshot, so class loading and JIT happen when a
  * version is published instead of on a student's first request (research R3).
  * <p>
  * It must never touch the database: a connection captured in the snapshot would be dead after restore.
- * That is why it hits an unmapped path (DispatcherServlet + Spring's JSON error handling) and serialises
- * the readiness DTO in memory, rather than calling {@code /health}.
+ * That is why it hits an unmapped path (DispatcherServlet + Spring's JSON error handling), serialises
+ * the readiness DTO in memory and presigns a dummy storage URL, rather than calling {@code /health}.
  */
 public class SnapStartPriming implements Resource {
 
@@ -36,8 +37,7 @@ public class SnapStartPriming implements Resource {
 
 	private final SpringBootLambdaContainerHandler<HttpApiV2ProxyRequest, AwsProxyResponse> handler;
 
-	public SnapStartPriming(
-			SpringBootLambdaContainerHandler<HttpApiV2ProxyRequest, AwsProxyResponse> handler) {
+	public SnapStartPriming(SpringBootLambdaContainerHandler<HttpApiV2ProxyRequest, AwsProxyResponse> handler) {
 		this.handler = handler;
 	}
 
@@ -59,6 +59,10 @@ public class SnapStartPriming implements Resource {
 
 	int prime() {
 		LambdaContainerHandler.getObjectMapper().writeValueAsString(ReadinessStatus.ready());
+		// Presigning is local computation (no network call): loads and JITs the signer used by image URLs.
+		WebApplicationContextUtils.getRequiredWebApplicationContext(handler.getServletContext())
+			.getBean(ObjectStorage.class)
+			.presignGet("snapstart-priming", Duration.ofMinutes(1));
 		return handler.proxy(primingRequest(), new PrimingContext()).getStatusCode();
 	}
 
@@ -79,15 +83,13 @@ public class SnapStartPriming implements Resource {
 		request.setRawPath(PRIMING_PATH);
 		request.setHeaders(Map.of("accept", "application/json"));
 		request.setRequestContext(requestContext);
-
 		return request;
 	}
 
 	/**
 	 * Minimal Lambda context for the synthetic priming invocation.
 	 */
-	private static final class PrimingContext
-			implements com.amazonaws.services.lambda.runtime.Context {
+	private static final class PrimingContext implements com.amazonaws.services.lambda.runtime.Context {
 
 		@Override
 		public String getAwsRequestId() {

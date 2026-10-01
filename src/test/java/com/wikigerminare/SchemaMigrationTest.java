@@ -28,8 +28,9 @@ class SchemaMigrationTest {
 				WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> 'flyway_schema_history'
 				""", String.class);
 
-		assertThat(tables).containsExactlyInAnyOrder("users", "folders", "pages", "page_images", "comments", "tags",
-				"page_tags", "page_links");
+		// V1's tables must exist; later migrations may add more.
+		assertThat(tables).contains("users", "folders", "pages", "page_images", "comments", "tags", "page_tags",
+				"page_links");
 	}
 
 	@Test
@@ -43,13 +44,26 @@ class SchemaMigrationTest {
 		List<String> triggers = jdbc.queryForList(
 				"SELECT DISTINCT trigger_name FROM information_schema.triggers WHERE trigger_schema = 'public'",
 				String.class);
-		assertThat(triggers).containsExactlyInAnyOrder("users_updated_at", "folders_updated_at", "pages_updated_at",
+		assertThat(triggers).contains("users_updated_at", "folders_updated_at", "pages_updated_at",
 				"comments_updated_at");
 
 		String indexDefinition = jdbc.queryForObject(
 				"SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'idx_pages_full_text_search'",
 				String.class);
 		assertThat(indexDefinition).contains("USING gin").contains("to_tsvector");
+	}
+
+	@Test
+	void queuesDeletedImageObjectsForStorageCleanup() {
+		// V2 (spec 005): deleted page_images rows queue their object key for removal from storage.
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM information_schema.tables WHERE table_name = 'image_object_deletions'",
+				Integer.class))
+			.isEqualTo(1);
+		assertThat(jdbc.queryForObject(
+				"SELECT count(*) FROM information_schema.triggers WHERE trigger_name = 'page_images_queue_object_deletion'",
+				Integer.class))
+			.isEqualTo(1);
 	}
 
 	@Test

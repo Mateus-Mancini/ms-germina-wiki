@@ -31,4 +31,5 @@ SPRING_PROFILES_ACTIVE=lambda \
 SPRING_DATASOURCE_URL="jdbc:postgresql://127.0.0.1:${port}/postgres" \
 SPRING_DATASOURCE_USERNAME=postgres \
 SPRING_DATASOURCE_PASSWORD=smoke \
+APP_STORAGE_ACCOUNT_ID=smoke APP_STORAGE_BUCKET=smoke APP_STORAGE_ACCESS_KEY_ID=smoke APP_STORAGE_SECRET_ACCESS_KEY=smoke \
 	java -cp "$work/pkg:$work/pkg/lib/*" "$root/scripts/smoke/LambdaPackageSmoke.java"

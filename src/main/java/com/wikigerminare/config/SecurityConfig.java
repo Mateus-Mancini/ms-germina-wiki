@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -12,7 +13,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.core.convert.converter.Converter;
 
+/**
+ * {@code @EnableMethodSecurity} activates declarative {@code @PreAuthorize}-based authorization
+ * (spec 011-rbac-middleware), so that {@code com.wikigerminare.security.AdminOnly} and any other
+ * method-security annotation are enforced project-wide. It does not alter the filter chain, the
+ * public route matchers, or the 401 authentication entry point configured below.
+ */
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(

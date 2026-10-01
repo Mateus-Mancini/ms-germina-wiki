@@ -113,8 +113,8 @@ description: "Task list for 001-backend-hosting"
 - [X] T026 [US3] Enable `SnapStart: ApplyOn: PublishedVersions` on `ApiFunction` in `template.yaml` (research R3)
 - [X] T027 [P] [US3] Write `src/test/java/com/wikigerminare/lambda/SnapStartPrimingTest.java`. It asserts that priming completes without opening any DB connection (Hikari active + idle connections = 0 after `beforeCheckpoint`)
 - [X] T028 [US3] Create `src/main/java/com/wikigerminare/lambda/SnapStartPriming.java`, an `org.crac.Resource` registered in `StreamLambdaHandler` whose `beforeCheckpoint` sends one synthetic request to an unmapped path (404 error path, never `/health`, which touches the DB) through the container handler, and serialises an in-memory `ReadinessStatus` with Jackson (research R3)
-- [ ] T029 [US3] Redeploy and measure per quickstart §4. Record `Restore Duration` and cold/warm timings in `specs/001-backend-hosting/quickstart.md` under a "Measured results" section, and adjust memory in `template.yaml` only if the data justifies it
-  - **Deferred past merge**: SnapStart verified (restore 0.74 s; first request after deploy 2.09 s vs 6.2 s before). The 10-sample ≥30-min-idle series (SC-003) was in progress at merge time; results go in a follow-up PR.
+- [X] T029 [US3] Redeploy and measure per quickstart §4. Record `Restore Duration` and cold/warm timings in `specs/001-backend-hosting/quickstart.md` under a "Measured results" section, and adjust memory in `template.yaml` only if the data justifies it
+  - Completed 2026-09-28: 9/9 genuine cold samples under 3 s (median 2.11 s), all warm under 300 ms. Results in quickstart.md, "Measured results".
 
 **Checkpoint**: SC-003 and SC-004 measured and met, or the deviation is documented for escalation (research R3, native image)
 
@@ -145,6 +145,7 @@ description: "Task list for 001-backend-hosting"
 - [ ] T038 Run the full quickstart (§1–§7) end to end and tick the results in the PR description
   - **Deferred past merge**: §1–§6 have each been run during implementation (see the PR description); the consolidated end-to-end run follows T029.
 - [ ] T039 Review cost after deploy: Billing shows USD 0.00, the budget exists, log retention is 7 days, and the only EventBridge schedule targets the guard function, never the API (FR-011, SC-002, quickstart §7)
+  - 2026-09-28 check: both budgets show USD 0.00 actual spend; log retention 7 days; the only schedules target the usage guard and (since 005) the image cleanup via the alias, never the public API (FR-011). Final confirmation at the first month-end bill.
   - **Deferred past merge**: needs a billing period to elapse (SC-002).
 - [X] T040 Add `scripts/smoke-lambda-package.sh`: unpack `target/wikigerminare-lambda.zip`, start a throwaway Postgres, invoke `StreamLambdaHandler` with a Function URL `GET /health` event and assert `200 ready`. Run it before every deploy (and in CI, feature 002). This closes the gap that let a missing runtime jar reach production (found during T017)
 

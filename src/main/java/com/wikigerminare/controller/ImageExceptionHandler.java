@@ -17,11 +17,11 @@ import com.wikigerminare.service.exception.UploadMismatchException;
 import com.wikigerminare.service.exception.UploadRejectedException;
 
 /**
- * Maps service exceptions to {"error": "..."} responses. Scoped to the controllers listed, so it never changes
+ * Maps image service exceptions to {"error": "..."} responses. Scoped to ImageController, so it never changes
  * other features' error handling.
  */
 @RestControllerAdvice(assignableTypes = ImageController.class)
-public class ApiExceptionHandler {
+public class ImageExceptionHandler {
 
 	@ExceptionHandler(UnauthenticatedException.class)
 	ResponseEntity<Map<String, String>> unauthenticated(UnauthenticatedException ex) {

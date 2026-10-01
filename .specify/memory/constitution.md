@@ -1,15 +1,13 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 -> 1.0.1 (PATCH)
-- Rationale: erratum. The backend was scaffolded and is maintained in Java 21 (pom.xml,
-  src/main/java); "Kotlin" in "Restrições técnicas e de negócio" did not reflect the adopted
-  stack. No principle is added, removed or redefined.
-- Modified principles: none
-- Modified sections: Restrições técnicas e de negócio (Kotlin -> Java 21)
-- Added sections: none
-- Removed sections: none
-- Resolved TODOs: RATIFICATION_DATE set to 2026-09-25 (merge of the initial constitution, PR #1)
-- Follow-up TODOs: none
+- Version change: 1.0.1 -> 1.0.2
+- Modified principles: template principles -> I. Especificação como fonte de verdade;
+  II. Arquitetura em camadas; III. Contratos REST e DTOs; IV. Testes automatizados;
+  V. Simplicidade, consistência e manutenibilidade
+- Added sections: Restrições técnicas e de negócio; Fluxo de desenvolvimento e qualidade
+- Removed sections: none (template scaffold replaced with project-specific content)
+- Follow-up TODOs: RATIFICATION_DATE requires confirmation of the original adoption date.
+- Technical constraint corrected from Kotlin to Java 21 to match the repository baseline.
 -->
 
 # GerminaWiki Constitution
@@ -106,4 +104,5 @@ introduzida MUST possuir justificativa. A Constitution MUST permanecer estável 
 regras só devem ser adicionadas quando representarem uma necessidade recorrente ou um
 princípio importante para a evolução do GerminaWiki.
 
-**Version**: 1.0.1 | **Ratified**: 2026-09-25 | **Last Amended**: 2026-09-27
+**Version**: 1.0.2 | **Ratified**: TODO(RATIFICATION_DATE): confirmar data de adoção
+original | **Last Amended**: 2026-09-28

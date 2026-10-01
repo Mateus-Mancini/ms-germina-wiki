@@ -5,7 +5,7 @@ Both repositories use GitHub Actions. Design: [`specs/003-ci-cd`](../specs/003-c
 | Repository | On pull request | On merge to `main` |
 |---|---|---|
 | **ms-germina-wiki** (API) | `build-test-package`: tests, guard tests, Lambda package + smoke test, template lint. `rehearse-migrations`: only if migrations changed, after owner approval | `release`: checks → **migrations** → deploy → `/health` → **automatic rollback** if unhealthy |
-| **GerminaWiki** (web app) | `lint-build`: lint + static export | `release`: checks → publish to Firebase Hosting (`https://germinawiki.web.app`) |
+| **GerminaWiki** (web app) | `lint-build`: type-check, tests, static Vite build | `release`: checks → publish to Firebase Hosting (`https://germinawiki.web.app`) |
 
 Releases run one at a time (`concurrency: production`). The job summary shows the previous and deployed API versions and the readiness result.
 

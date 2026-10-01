@@ -59,6 +59,8 @@
 
 ## R6. Web app hosting and static export (FR-009)
 
+> **Superseded (2026-09-28), see R10.** The web app moved from Next.js to Vite + React. The hosting, environments and credentials below are unchanged; only the build tool and output path differ.
+
 - **Decision**:
   - Next.js `output: 'export'` with `images: { unoptimized: true }`, producing `out/`.
   - `firebase.json` hosting from `out/`, with `cleanUrls: true`, and `.firebaserc` default project `germinawiki`.
@@ -82,3 +84,16 @@
 - **Decision**: add the check job names to each repo's `main` branch protection (`required_status_checks`, `strict: false`), using a `gh api` command the owner runs (admin action). The existing one-approval rule stays.
   - Backend: `build-test-package`
   - Web app: `lint-build`
+
+## R10. Frontend stack change after implementation (2026-09-28)
+
+- **Context**: Clara's app-shell work (web app PR #2) arrived as a **Vite + plain TypeScript** app in `frontend/`, branched from the repository's initial commit, so it conflicted with the Next.js scaffold and could not produce a production build. The team chose **Vite + React** (keep Clara's setup, add React for components such as the BlockNote editor).
+- **Decision**, delivered by an integration PR that merges Clara's branch with her commits preserved:
+  - Remove the Next.js scaffold.
+  - Add React 19 with `@vitejs/plugin-react` 5, the newest line supporting Vite 6 (plugin-react 6 needs Vite 8).
+  - Scripts: `typecheck`, `test` (Vitest), and `build` (typecheck + `vite build` → `frontend/dist`).
+  - Dev and preview servers on **port 3000**, the local origin the API's CORS allows (spec 001, FR-002).
+  - CI `lint-build` (name kept, so branch protection doesn't change): typecheck, test, build, then assert `frontend/dist/index.html` exists.
+  - `firebase.json` serves `frontend/dist` with an SPA rewrite to `index.html`.
+- **Unchanged**: environments, the Firebase service account, the release workflow, required checks.
+

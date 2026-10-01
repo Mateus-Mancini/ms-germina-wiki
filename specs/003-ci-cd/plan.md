@@ -9,7 +9,7 @@
 **GitHub Actions** in both repositories, with a check workflow on PRs and a release workflow on `main` that reuses the checks:
 - **Backend release**: migrates with `scripts/db-migrate.sh production`, deploys with SAM, verifies `/health`, and **rolls back automatically**. It uses short-lived AWS credentials via **OIDC**, trusted only for the `production` environment, which is restricted to `main`.
 - **Migration rehearsal on PRs**: runs on a disposable Neon branch, behind an owner-approved environment.
-- **Web app**: static-exports Next.js and publishes it to **Firebase Hosting** (Spark plan) with a Hosting-only service account.
+- **Web app**: builds a static SPA (Vite + React since research R10; originally a Next.js static export) and publishes it to **Firebase Hosting** (Spark plan) with a Hosting-only service account.
 - **Owner setup**: one-time steps as commands in `docs/ci-cd.md`.
 
 ## Technical Context
@@ -74,7 +74,7 @@ docs/ci-cd.md                     # one-time setup commands + how releases work
 .github/workflows/ci.yml          # PR: lint + static build; reusable
 .github/workflows/release.yml     # main: checks → Firebase Hosting live
 firebase.json, .firebaserc        # hosting config (new files)
-next.config.ts                    # output: 'export', images.unoptimized (2 keys)
+frontend/vite.config.ts           # (since R10) React plugin, dist output, port 3000; was next.config.ts
 ```
 
 **Structure Decision**: this Spec Kit feature lives in the backend repo, where Spec Kit is set up; the web app gets no `.specify/` until Clara's push, to avoid conflicts. The web app commits reference this spec by path.

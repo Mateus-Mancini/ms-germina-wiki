@@ -1,6 +1,7 @@
 package com.wikigerminare;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -10,7 +11,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.Principal;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -66,13 +66,11 @@ class ImageFlowIntegrationTest {
 
 	private UUID pageId;
 
-	private Principal principal;
 
 	@BeforeEach
 	void seedUserAndPage() {
 		userId = UUID.randomUUID();
 		pageId = UUID.randomUUID();
-		principal = () -> userId.toString();
 		jdbc.update("INSERT INTO users (id, name, email, password_hash) VALUES (?, 'Student', ?, 'x')", userId,
 				userId + "@example.com");
 		jdbc.update("INSERT INTO pages (id, title, slug, created_by) VALUES (?, 'Trip', ?, ?)", pageId,
@@ -88,7 +86,7 @@ class ImageFlowIntegrationTest {
 		assertThat(putBytes(uploadUrl, "image/png", PNG)).isEqualTo(200);
 
 		String image = mvc
-			.perform(post("/api/pages/{pageId}/images", pageId).principal(principal)
+			.perform(post("/api/pages/{pageId}/images", pageId).with(user(userId.toString()))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"uploadKey\":\"" + key + "\",\"fileName\":\"trip.png\"}"))
 			.andExpect(status().isCreated())
@@ -110,6 +108,15 @@ class ImageFlowIntegrationTest {
 	}
 
 	@Test
+	void anonymousUploadsAreUnauthorizedButImageAddressesArePublic() throws Exception {
+		mvc.perform(post("/api/pages/{pageId}/images/uploads", pageId).contentType(MediaType.APPLICATION_JSON)
+			.content("{\"contentType\":\"image/png\",\"size\":10}")).andExpect(status().isUnauthorized());
+
+		UUID imageId = uploadAndConfirm();
+		mvc.perform(get("/api/images/{imageId}", imageId)).andExpect(status().isFound());
+	}
+
+	@Test
 	void storageRejectsBytesOfAnotherTypeThanPermitted() throws Exception {
 		String permission = requestUpload("image/png", PNG.length);
 
@@ -123,7 +130,7 @@ class ImageFlowIntegrationTest {
 		s3.putObject(request -> request.bucket(storageProperties.bucket()).key(key).contentType("text/html"),
 				RequestBody.fromBytes(PNG));
 
-		mvc.perform(post("/api/pages/{pageId}/images", pageId).principal(principal)
+		mvc.perform(post("/api/pages/{pageId}/images", pageId).with(user(userId.toString()))
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"uploadKey\":\"" + key + "\",\"fileName\":\"x.html\"}")).andExpect(status().isConflict());
 
@@ -153,7 +160,7 @@ class ImageFlowIntegrationTest {
 		UUID imageId = uploadAndConfirm();
 		String objectKey = objectKeyOf(imageId);
 
-		mvc.perform(delete("/api/images/{imageId}", imageId).principal(principal)).andExpect(status().isNoContent());
+		mvc.perform(delete("/api/images/{imageId}", imageId).with(user(userId.toString()))).andExpect(status().isNoContent());
 
 		assertThat(storage.head(objectKey)).isEmpty();
 		mvc.perform(get("/api/images/{imageId}", imageId)).andExpect(status().isNotFound());
@@ -179,7 +186,7 @@ class ImageFlowIntegrationTest {
 		String key = JsonPath.read(permission, "$.uploadKey");
 		assertThat(putBytes(URI.create(JsonPath.read(permission, "$.uploadUrl")), "image/png", PNG)).isEqualTo(200);
 		String image = mvc
-			.perform(post("/api/pages/{pageId}/images", pageId).principal(principal)
+			.perform(post("/api/pages/{pageId}/images", pageId).with(user(userId.toString()))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"uploadKey\":\"" + key + "\",\"fileName\":\"a.png\"}"))
 			.andExpect(status().isCreated())
@@ -199,7 +206,7 @@ class ImageFlowIntegrationTest {
 
 	private String requestUpload(String contentType, int size) throws Exception {
 		return mvc
-			.perform(post("/api/pages/{pageId}/images/uploads", pageId).principal(principal)
+			.perform(post("/api/pages/{pageId}/images/uploads", pageId).with(user(userId.toString()))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"contentType\":\"" + contentType + "\",\"size\":" + size + "}"))
 			.andExpect(status().isCreated())

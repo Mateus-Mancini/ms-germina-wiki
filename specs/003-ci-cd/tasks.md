@@ -73,6 +73,8 @@ description: "Task list for 003-ci-cd"
 
 ---
 
+> **Note (2026-09-28)**: T007, T008 and T012 were implemented for Next.js and later adapted to Vite + React by the web app integration PR (research R10).
+
 ## Dependencies & Execution Order
 
 - T001–T003 → T004 (owner setup) → the US1–US3 workflows can be merged, but release runs need T004 done

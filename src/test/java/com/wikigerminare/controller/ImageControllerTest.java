@@ -167,12 +167,23 @@ class ImageControllerTest {
 	void deleteReturns204AndMapsForbidden() throws Exception {
 		UUID mine = UUID.randomUUID();
 		UUID theirs = UUID.randomUUID();
-		doThrow(new ForbiddenException("Only the uploader can delete this image")).when(imageService)
-			.delete(theirs, userId);
+		doThrow(new ForbiddenException("Only the uploader or an admin can delete this image")).when(imageService)
+			.delete(theirs, userId, false);
 
 		mvc.perform(delete("/api/images/{imageId}", mine).principal(principal)).andExpect(status().isNoContent());
-		verify(imageService).delete(mine, userId);
+		verify(imageService).delete(mine, userId, false);
 		mvc.perform(delete("/api/images/{imageId}", theirs).principal(principal)).andExpect(status().isForbidden());
+	}
+
+	@Test
+	void adminsAreRecognisedFromTheAuthenticatedRoles() throws Exception {
+		UUID imageId = UUID.randomUUID();
+		var admin = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(userId.toString(),
+				null, java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN")));
+
+		mvc.perform(delete("/api/images/{imageId}", imageId).principal(admin)).andExpect(status().isNoContent());
+
+		verify(imageService).delete(imageId, userId, true);
 	}
 
 	private void assertError(RuntimeException error, int status) throws Exception {

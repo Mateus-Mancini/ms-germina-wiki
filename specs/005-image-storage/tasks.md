@@ -52,7 +52,7 @@ description: "Task list for 005-image-storage"
 - [X] T010 [P] [US1] DTO records `dto/UploadRequest.java`, `dto/UploadPermission.java`, `dto/ConfirmRequest.java`, `dto/ImageResponse.java` with Bean Validation per the contract
 - [X] T011 [P] [US1] `repository/ImageRepository.java` (`JdbcTemplate`): `pageExists`, `insert`, `findById`, `findByPage` (newest first), `delete`, plus the deletion-queue methods
 - [X] T012 [US1] Service exceptions in `service/exception/` and `service/ImageService.java`: `requestUpload`, `confirmUpload` (research R3, R6)
-- [X] T013 [US1] `controller/ImageController.java` (`POST /api/pages/{pageId}/images/uploads`, `POST /api/pages/{pageId}/images`) and `controller/ApiExceptionHandler.java` scoped to `ImageController`, mapping the exceptions to `{"error"}` bodies
+- [X] T013 [US1] `controller/ImageController.java` (`POST /api/pages/{pageId}/images/uploads`, `POST /api/pages/{pageId}/images`) and `controller/ImageExceptionHandler.java` (renamed from ApiExceptionHandler after main added a bean of that name) scoped to `ImageController`, mapping the exceptions to `{"error"}` bodies
 
 **Checkpoint**: MVP. Uploads work end to end against MinIO
 
@@ -72,7 +72,7 @@ description: "Task list for 005-image-storage"
   - service list (404 for a missing page) and delete (uploader 204; another user 403; unknown 404; storage object deleted)
   - MVC `GET /api/pages/{pageId}/images` and `DELETE /api/images/{id}`
   - integration: delete removes the row and the object; deleting a **page** queues its image keys (V2 trigger); the cleanup deletes the queued objects and the queue rows
-- [X] T018 [US3] Implement `ImageService.list` and `delete` (`canDelete`: the uploader; the admin hook is noted for RBAC) and their endpoints
+- [X] T018 [US3] Implement `ImageService.list` and `delete` (the uploader or an admin with `ROLE_ADMIN`, available since main added Spring Security) and their endpoints
 - [X] T019 [US3] Implement `service/ImageCleanupService.java` (process the queue: delete the object, then the row; idempotent) and route the payload `{"source":"germinawiki.image-cleanup"}` in `lambda/StreamLambdaHandler.java` to it, returning `{"deleted":N}` (research R5)
 
 ---

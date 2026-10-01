@@ -46,7 +46,7 @@
 
 ## R6. Identity and roles (FR-002, FR-013)
 
-- **Decision**: the controllers take `java.security.Principal`. If it's null, they return **401**. The UUID comes from `principal.getName()`, the convention auth-api will provide. Admin override for delete is deferred until RBAC exists; the service has a single `canDelete(image, userId)` rule to extend.
+- **Decision**: the controllers take `java.security.Principal`. If it's null, they return **401**. The UUID comes from `principal.getName()`, the convention auth-api will provide. *Updated after merging main (Spring Security):* signed-out requests get 401 from the security entry point, and admins are recognised from the `ROLE_ADMIN` authority of the authenticated principal, so the uploader **or an admin** may delete (FR-007).
 - **Rationale**: this is the same pattern suggested in the folders review. The feature works as soon as auth lands, and fails safely (401, not 500) until then.
 
 ## R7. Page existence (FR-013)

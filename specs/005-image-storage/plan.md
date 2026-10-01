@@ -75,7 +75,7 @@ pom.xml                                              # + awssdk bom, s3, url-con
 src/main/resources/db/migration/V2__image_object_deletions.sql
 src/main/java/com/wikigerminare/
 ├── controller/ImageController.java
-├── controller/ApiExceptionHandler.java              # shared {"error"} mapping for image exceptions, scoped to ImageController
+├── controller/ImageExceptionHandler.java            # {"error"} mapping for image exceptions, scoped to ImageController
 ├── service/ImageService.java
 ├── service/ImageCleanupService.java
 ├── service/exception/{ImageNotFound,UploadRejected,UploadMismatch,Forbidden,Unauthenticated}Exception.java

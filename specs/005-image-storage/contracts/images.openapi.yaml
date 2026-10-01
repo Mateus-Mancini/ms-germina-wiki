@@ -75,7 +75,7 @@ paths:
         "404": { $ref: "#/components/responses/Error" }
     delete:
       operationId: deleteImage
-      summary: Delete an image (the uploader; admins once RBAC exists)
+      summary: Delete an image (the uploader or an admin, ROLE_ADMIN)
       parameters: [{ $ref: "#/components/parameters/ImageId" }]
       responses:
         "204": { description: Record and stored file removed }

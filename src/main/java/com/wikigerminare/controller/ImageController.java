@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,7 +73,16 @@ public class ImageController {
 	@DeleteMapping("/api/images/{imageId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void delete(@PathVariable UUID imageId, Principal principal) {
-		imageService.delete(imageId, currentUserId(principal));
+		imageService.delete(imageId, currentUserId(principal), isAdmin(principal));
+	}
+
+	/**
+	 * Admin role from the authenticated principal (ROLE_ADMIN, as provided by the auth/RBAC features).
+	 */
+	static boolean isAdmin(Principal principal) {
+		return principal instanceof Authentication authentication && authentication.getAuthorities()
+			.stream()
+			.anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
 	}
 
 	/**

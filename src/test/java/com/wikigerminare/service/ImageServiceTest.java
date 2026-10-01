@@ -203,7 +203,7 @@ class ImageServiceTest {
 			when(repository.findById(unknown)).thenReturn(Optional.empty());
 
 			assertThatThrownBy(() -> service.imageRedirect(unknown)).isInstanceOf(ResourceNotFoundException.class);
-			assertThatThrownBy(() -> service.delete(unknown, userId)).isInstanceOf(ResourceNotFoundException.class);
+			assertThatThrownBy(() -> service.delete(unknown, userId, false)).isInstanceOf(ResourceNotFoundException.class);
 		}
 
 		@Test
@@ -216,7 +216,7 @@ class ImageServiceTest {
 
 		@Test
 		void theUploaderDeletesTheRecordAndTheStoredFile() {
-			service.delete(imageId, userId);
+			service.delete(imageId, userId, false);
 
 			verify(repository).delete(imageId);
 			verify(repository).dequeue(image.objectKey());
@@ -224,9 +224,17 @@ class ImageServiceTest {
 		}
 
 		@Test
+		void anAdminMayDeleteAnyonesImage() {
+			service.delete(imageId, UUID.randomUUID(), true);
+
+			verify(repository).delete(imageId);
+			assertThat(storage.objects).doesNotContainKey(image.objectKey());
+		}
+
+		@Test
 		void otherUsersMayNotDeleteAndAnonymousUsersMustSignIn() {
-			assertThatThrownBy(() -> service.delete(imageId, UUID.randomUUID())).isInstanceOf(ForbiddenException.class);
-			assertThatThrownBy(() -> service.delete(imageId, null)).isInstanceOf(UnauthenticatedException.class);
+			assertThatThrownBy(() -> service.delete(imageId, UUID.randomUUID(), false)).isInstanceOf(ForbiddenException.class);
+			assertThatThrownBy(() -> service.delete(imageId, null, false)).isInstanceOf(UnauthenticatedException.class);
 			verify(repository, never()).delete(any());
 			assertThat(storage.objects).containsKey(image.objectKey());
 		}

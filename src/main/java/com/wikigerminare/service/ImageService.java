@@ -117,25 +117,20 @@ public class ImageService {
 	}
 
 	/**
-	 * Removes the record and the stored file. Only the uploader may delete for now; admins are added once the
-	 * RBAC feature provides roles.
+	 * Removes the record and the stored file. The uploader or an admin may delete (FR-007).
 	 */
-	public void delete(UUID imageId, UUID userId) {
+	public void delete(UUID imageId, UUID userId, boolean isAdmin) {
 		if (userId == null) {
 			throw new UnauthenticatedException("Sign in to delete images");
 		}
 		PageImage image = findImage(imageId);
-		if (!canDelete(image, userId)) {
-			throw new ForbiddenException("Only the uploader can delete this image");
+		if (!isAdmin && !image.uploadedBy().equals(userId)) {
+			throw new ForbiddenException("Only the uploader or an admin can delete this image");
 		}
 		repository.delete(imageId);
 		storage.delete(image.objectKey());
 		// The V2 trigger queued the key for the daily cleanup; it's already gone.
 		repository.dequeue(image.objectKey());
-	}
-
-	private boolean canDelete(PageImage image, UUID userId) {
-		return image.uploadedBy().equals(userId);
 	}
 
 	private PageImage findImage(UUID imageId) {

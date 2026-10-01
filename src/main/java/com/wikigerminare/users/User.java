@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -26,6 +27,7 @@ public class User {
     private String passwordHash;
 
     @Column(name = "role", nullable = false, columnDefinition = "user_role")
+    @ColumnTransformer(write = "CAST(? AS user_role)")
     private String role;
 
     @Column(name = "avatar_url", columnDefinition = "text")

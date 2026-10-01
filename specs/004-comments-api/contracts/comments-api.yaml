@@ -1,0 +1,345 @@
+openapi: 3.1.0
+info:
+  title: GerminaWiki Comments API
+  version: 1.0.0
+  description: Contrato de comentários ancorados e respostas administrativas.
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+paths:
+  /api/comments:
+    get:
+      summary: Lista comentários ativos de um conteúdo
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/ContentId'
+        - $ref: '#/components/parameters/AnchorType'
+        - $ref: '#/components/parameters/AnchorValue'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de comentários ativos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentPage'
+        '404':
+          $ref: '#/components/responses/ContentNotFound'
+        '409':
+          $ref: '#/components/responses/ContentUnavailable'
+    post:
+      summary: Cria comentário ancorado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Comentário criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ContentNotFound'
+        '409':
+          $ref: '#/components/responses/ContentUnavailable'
+  /api/comments/{commentId}:
+    parameters:
+      - $ref: '#/components/parameters/CommentId'
+    get:
+      summary: Consulta um comentário ativo
+      security: []
+      responses:
+        '200':
+          description: Comentário encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '404':
+          $ref: '#/components/responses/CommentNotFound'
+    patch:
+      summary: Edita o texto do próprio comentário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCommentRequest'
+      responses:
+        '200':
+          description: Comentário atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CommentNotFound'
+        '409':
+          $ref: '#/components/responses/AnchorInvalid'
+    delete:
+      summary: Remove logicamente o próprio comentário ou um comentário como administrador
+      responses:
+        '204':
+          description: Comentário removido ou já removido.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CommentNotFound'
+  /api/comments/{commentId}/admin-replies:
+    parameters:
+      - $ref: '#/components/parameters/CommentId'
+    post:
+      summary: Cria resposta administrativa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdminReplyRequest'
+      responses:
+        '201':
+          description: Resposta criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReply'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/CommentNotFound'
+        '409':
+          $ref: '#/components/responses/CommentInactive'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    ContentId:
+      name: contentId
+      in: query
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AnchorType:
+      name: anchorType
+      in: query
+      required: false
+      schema:
+        type: string
+    AnchorValue:
+      name: anchorValue
+      in: query
+      required: false
+      schema:
+        type: string
+    CommentId:
+      name: commentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  schemas:
+    Anchor:
+      type: object
+      required: [type, value, revision]
+      properties:
+        type:
+          type: string
+        value:
+          type: string
+        revision:
+          oneOf:
+            - type: string
+            - type: integer
+    CreateCommentRequest:
+      type: object
+      required: [contentId, anchor, text]
+      properties:
+        contentId:
+          type: string
+          format: uuid
+        anchor:
+          $ref: '#/components/schemas/Anchor'
+        text:
+          type: string
+          minLength: 1
+    UpdateCommentRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+    CreateAdminReplyRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+    AdminReply:
+      type: object
+      required: [id, commentId, adminId, text, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        commentId:
+          type: string
+          format: uuid
+        adminId:
+          type: string
+          format: uuid
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    Comment:
+      type: object
+      required: [id, contentId, authorId, anchor, text, status, createdAt, updatedAt, adminReplies]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contentId:
+          type: string
+          format: uuid
+        authorId:
+          type: string
+          format: uuid
+        anchor:
+          $ref: '#/components/schemas/Anchor'
+        text:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        adminReplies:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminReply'
+    CommentPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+  responses:
+    ValidationError:
+      description: Dados inválidos.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Autenticação ausente ou inválida.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Usuário sem permissão.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ContentNotFound:
+      description: Conteúdo não encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ContentUnavailable:
+      description: Conteúdo não publicado ou indisponível.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    CommentNotFound:
+      description: Comentário não encontrado ou não ativo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    AnchorInvalid:
+      description: Anchor inválido ou desatualizado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    CommentInactive:
+      description: Comentário removido ou inativo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

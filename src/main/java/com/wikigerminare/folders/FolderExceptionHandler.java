@@ -6,12 +6,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice(assignableTypes = FolderController.class)
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class FolderExceptionHandler {
 
     @ExceptionHandler(FolderNotFoundException.class)

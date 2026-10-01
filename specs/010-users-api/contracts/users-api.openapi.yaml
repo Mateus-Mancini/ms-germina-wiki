@@ -1,0 +1,150 @@
+openapi: 3.1.0
+info:
+  title: GerminaWiki API - User Profiles
+  version: 1.0.0
+  description: Authenticated self-profile management and public-field profile lookup.
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+paths:
+  /api/users/me:
+    get:
+      operationId: getOwnUserProfile
+      summary: Get the authenticated user's own profile
+      description: The account is selected only from the authenticated identity.
+      responses:
+        "200":
+          description: Own profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OwnUserProfile"
+        "401":
+          description: Authentication is missing or invalid.
+        "404":
+          description: The authenticated identity does not correspond to an account.
+    patch:
+      operationId: updateOwnUserProfile
+      summary: Partially update the authenticated user's profile
+      description: |
+        Only name, avatarUrl, and bio are accepted. Omitted properties are unchanged;
+        explicit null clears avatarUrl or bio. The authenticated identity is always
+        the target; client-supplied identity/account fields are rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOwnUserProfile"
+      responses:
+        "200":
+          description: Updated own profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OwnUserProfile"
+        "400":
+          description: Empty, invalid, or disallowed update fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication is missing or invalid.
+        "404":
+          description: The authenticated identity does not correspond to an account.
+  /api/users/{userId}:
+    get:
+      operationId: getPublicUserProfile
+      summary: Get a user's public profile fields
+      description: |
+        Requires an authorized consumer. Public describes the visible profile fields,
+        not anonymous access. Email, role, credentials, and internal metadata are omitted.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID of the profile to read.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Public profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicUserProfile"
+        "400":
+          description: The path value is not a valid UUID.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication is missing or invalid.
+        "404":
+          description: No account exists for this UUID.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    OwnUserProfile:
+      type: object
+      additionalProperties: false
+      required: [id, name, email, avatarUrl, bio]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        avatarUrl:
+          type: [string, "null"]
+        bio:
+          type: [string, "null"]
+    PublicUserProfile:
+      type: object
+      additionalProperties: false
+      required: [id, name, avatarUrl, bio]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        avatarUrl:
+          type: [string, "null"]
+        bio:
+          type: [string, "null"]
+    UpdateOwnUserProfile:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          description: Must not consist only of whitespace.
+        avatarUrl:
+          type: [string, "null"]
+        bio:
+          type: [string, "null"]
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: string

@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -26,6 +27,7 @@ public class User {
     private String passwordHash;
 
     @Column(name = "role", nullable = false, columnDefinition = "user_role")
+    @ColumnTransformer(write = "CAST(? AS user_role)")
     private String role;
 
     @Column(name = "avatar_url", columnDefinition = "text")
@@ -51,6 +53,10 @@ public class User {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getEmail() {
         return email;
     }
@@ -67,8 +73,16 @@ public class User {
         return avatarUrl;
     }
 
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
     public String getBio() {
         return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
     }
 
     public Instant getCreatedAt() {

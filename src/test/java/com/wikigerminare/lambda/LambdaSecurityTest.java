@@ -3,7 +3,9 @@ package com.wikigerminare.lambda;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Proxy;
+import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -19,6 +21,14 @@ import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.wikigerminare.WikigerminareApplication;
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.wikigerminare.auth.security.AuthJwtProperties;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 /**
  * Spring Security through the real Lambda adapter with Function URL (HTTP API v2) events. MockMvc can't
@@ -61,7 +71,16 @@ class LambdaSecurityTest {
 		assertThat(statusOf("GET", "/api/images/00000000-0000-0000-0000-000000000000", "*/*")).isEqualTo(404);
 	}
 
+	@Test
+	void signedBearerTokenReachesProtectedRouteThroughLambdaAdapter() {
+		assertThat(statusOf("GET", "/api/folders", "*/*", signedToken())).isEqualTo(200);
+	}
+
 	private static int statusOf(String method, String path, String accept) {
+		return statusOf(method, path, accept, null);
+	}
+
+	private static int statusOf(String method, String path, String accept, String token) {
 		HttpApiV2HttpContext http = new HttpApiV2HttpContext();
 		http.setMethod(method);
 		http.setPath(path);
@@ -74,9 +93,28 @@ class LambdaSecurityTest {
 		HttpApiV2ProxyRequest request = new HttpApiV2ProxyRequest();
 		request.setVersion("2.0");
 		request.setRawPath(path);
-		request.setHeaders(Map.of("accept", accept));
+		request.setHeaders(token == null
+				? Map.of("accept", accept)
+				: Map.of("accept", accept, "authorization", "Bearer " + token));
 		request.setRequestContext(context);
 		return handler.proxy(request, lambdaContext()).getStatusCode();
+	}
+
+	private static String signedToken() {
+		AuthJwtProperties properties = new AuthJwtProperties(
+				"VGhpc0lzQVRlc3RPbmx5U2VjcmV0S2V5Rm9yS2V5RGVyaXZhdGlvbg==", 900);
+		NimbusJwtEncoder encoder = new NimbusJwtEncoder(
+				new ImmutableSecret<SecurityContext>(properties.secretKey().getEncoded()));
+		Instant now = Instant.now();
+		JwtClaimsSet claims = JwtClaimsSet.builder()
+				.issuer(AuthJwtProperties.ISSUER)
+				.subject(UUID.randomUUID().toString())
+				.issuedAt(now)
+				.expiresAt(now.plusSeconds(300))
+				.claim("role", "member")
+				.build();
+		return encoder.encode(JwtEncoderParameters.from(
+				JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();
 	}
 
 	private static Context lambdaContext() {

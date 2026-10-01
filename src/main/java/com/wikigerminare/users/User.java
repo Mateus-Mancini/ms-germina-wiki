@@ -1,0 +1,81 @@
+package com.wikigerminare.users;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @Column(name = "id", nullable = false)
+    private UUID id;
+
+    @Column(name = "name", nullable = false, length = 150)
+    private String name;
+
+    @Column(name = "email", nullable = false, length = 255, unique = true)
+    private String email;
+
+    @Column(name = "password_hash", nullable = false, columnDefinition = "text")
+    private String passwordHash;
+
+    @Column(name = "role", nullable = false, columnDefinition = "user_role")
+    private String role;
+
+    @Column(name = "avatar_url", columnDefinition = "text")
+    private String avatarUrl;
+
+    @Column(name = "bio", columnDefinition = "text")
+    private String bio;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    protected User() {
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public UserRole getRole() {
+        return UserRole.fromDatabaseValue(role);
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+}

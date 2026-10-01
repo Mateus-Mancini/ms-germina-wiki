@@ -1,0 +1,94 @@
+openapi: 3.1.0
+info:
+  title: GerminaWiki API - Authentication
+  version: 1.0.0
+  description: Email/password login and JWT access-token contract.
+servers:
+  - url: /
+paths:
+  /api/auth/login:
+    post:
+      operationId: login
+      summary: Authenticate an existing account
+      description: |
+        Email and password are checked against an existing account. Unknown email and
+        incorrect password have the same status and response body. No account profile,
+        password, or password hash is returned.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authentication succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Request body is missing required fields or contains invalid data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Email or password is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Invalid email or password
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 1
+          writeOnly: true
+    LoginResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - accessToken
+        - tokenType
+        - expiresAt
+      properties:
+        accessToken:
+          type: string
+          description: Signed JWT access token.
+        tokenType:
+          type: string
+          const: Bearer
+        expiresAt:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          enum:
+            - Invalid email or password
+            - Invalid request

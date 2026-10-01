@@ -30,20 +30,22 @@ From the repository root:
 
 The auth test set should include:
 
-- `AuthServiceTest`: valid login issues a signed token with correct UUID and role;
-  unknown account and wrong password produce the same generic authentication error;
-  no token is issued on failure.
-- JWT tests: HS256 signature, canonical UUID `sub`, role claim, issue/expiry times,
-  invalid signature, expired token and malformed/unknown claims.
-- MockMvc tests: login success DTO shape; 400 for missing/malformed request; identical
-  401 status/body for unknown email and incorrect password; no password/hash in output.
-- PostgreSQL Testcontainers test against the Flyway V1 schema: exact user lookup,
-  native `user_role` mapping and login using a BCrypt hash; no migration is added.
-- Security-chain tests: a real login token authenticates a protected route; the
-  authentication name is the user UUID; only admin has `ROLE_ADMIN`; missing,
-  malformed and expired tokens receive 401.
-- Regression tests: `/health` and `GET /api/images/{id}` remain public, while other
-  protected requests remain denied without a valid token.
+- `AuthServiceTest`: valid BCrypt credentials issue a token; unknown email and wrong
+  password yield the same generic failure and no token.
+- `AuthControllerTest`: valid response contains only the documented token fields;
+  malformed login input returns 400; credential failures return the same 401 body.
+- `JwtTokenServiceTest` and `JwtConfigurationTest`: HS256, canonical UUID `sub`,
+  persisted role, `iat`, `exp`, stable `iss`, no sensitive claims, and rejection of
+  expired, altered, unsupported-algorithm or invalid-claim tokens.
+- `JwtRoleAuthenticationConverterTest`: only `admin` maps to `ROLE_ADMIN`; the
+  existing `SecurityAuthenticatedUserProvider` receives UUID identity and the
+  correct `isAdmin` value for both roles.
+- `SecurityConfigTest`: protected routes reject missing, malformed and expired tokens,
+  accept valid JWTs, and preserve public health and image-read routes.
+- `UserRepositoryPostgresTest`, `AuthIntegrationTest` and
+  `AuthSecurityIntegrationTest`: use the existing Flyway V1 schema/Testcontainers to
+  check native enum mapping, exact lookup, login, generic failures and UUID identity.
+  No users migration is added.
 - Lambda adapter test: pass an issued Bearer token through the real HTTP API v2 adapter
   and confirm that token handling does not require a session or produce a 502.
 

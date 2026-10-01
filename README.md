@@ -30,6 +30,25 @@ curl localhost:8080/health    # {"status":"ready"}
 
 The `local` profile allows CORS from `http://localhost:3000` for the web app.
 
+### Authentication
+
+The API requires a local JWT signing key and token lifetime. Generate a disposable
+32-byte key for the current PowerShell session (never commit or reuse it in production):
+
+```powershell
+$key = [byte[]]::new(32)
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($key)
+$rng.Dispose()
+$env:APP_AUTH_JWT_SECRET_BASE64 = [Convert]::ToBase64String($key)
+$env:APP_AUTH_JWT_TTL_SECONDS = "900"
+```
+
+Accounts must already exist in the `users` table with a BCrypt-compatible
+`password_hash` and a `role` of `admin` or `member`; auth-api does not create accounts.
+Production must receive the same variables from the approved secrets manager through
+environment infrastructure.
+
 ## Tests
 
 ```bash

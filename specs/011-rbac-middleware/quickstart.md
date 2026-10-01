@@ -11,14 +11,16 @@ itself via the test-only probe described in `plan.md`/`research.md` §5.
 - No environment variables needed beyond what the existing test suite already configures (the
   `local`/test JWT signing setup already used by `SecurityConfigTest`/`AuthSecurityIntegrationTest`).
 
-## 1. Run the guard's dedicated test class
+## 1. Run the guard's dedicated test classes
 
 ```bash
-./mvnw test -Dtest=AdminOnlyGuardTest
+./mvnw test -Dtest=AdminOnlyAnonymousAccessTest,AdminOnlyMemberAccessTest,AdminOnlyAdminAccessTest,AdminOnlyOtherFeatureProbeTest
 ```
 
-**Expected outcome**: all tests pass, covering the three scenarios below plus the "never executes"
-assertion.
+**Expected outcome**: all 11 tests pass — `AdminOnlyAnonymousAccessTest` (US1, 401), `AdminOnlyMemberAccessTest`
+(US2, 403 — including the no-granted-authorities case), `AdminOnlyAdminAccessTest` (US3, allow), and
+`AdminOnlyOtherFeatureProbeTest` (US4, same matrix reproduced in a second feature area), covering the
+scenarios below plus the "never executes" assertion via each probe's call counter.
 
 ## 2. Scenarios this proves
 
@@ -33,12 +35,14 @@ assertion.
 ## 3. Run the full existing security regression suite
 
 ```bash
-./mvnw test -Dtest=SecurityConfigTest,AuthSecurityIntegrationTest,AdminOnlyGuardTest
+./mvnw test -Dtest=SecurityConfigTest,AuthSecurityIntegrationTest,AdminOnlyAnonymousAccessTest,AdminOnlyMemberAccessTest,AdminOnlyAdminAccessTest,AdminOnlyOtherFeatureProbeTest
 ```
 
 **Expected outcome**: all pass — confirms the new `@EnableMethodSecurity` addition to
 `SecurityConfig` does not change the existing filter-chain behavior (public routes, 401 entry
 point, JWT validation) documented by `SecurityConfigTest` and `AuthSecurityIntegrationTest`.
+`AuthSecurityIntegrationTest` requires a local Docker environment (Testcontainers PostgreSQL);
+`SecurityConfigTest` and all `AdminOnly*Test` classes are pure `@WebMvcTest` slices and do not.
 
 ## 4. Run the full test suite (final check before merge)
 
@@ -59,5 +63,5 @@ hand-written admin checks, must be unaffected since this feature does not modify
 
 Then, with a locally issued admin JWT and a locally issued member JWT (see `README.md`'s
 "Authentication" section for how local tokens are produced for this project), call the test probe
-route (if temporarily exposed) or rely on the automated `AdminOnlyGuardTest` above — the automated
-test is the primary acceptance check for this feature; manual calls are optional confirmation only.
+route (if temporarily exposed) or rely on the automated tests above — the automated tests are the
+primary acceptance check for this feature; manual calls are optional confirmation only.

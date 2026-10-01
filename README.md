@@ -18,6 +18,7 @@ The Spec Kit commands are installed for **GitHub Copilot** (`.github/skills/`, P
 | [002-database-migrations](specs/002-database-migrations/) | Versioned schema (Flyway), tests on the real schema, safe production migrations |
 | [003-ci-cd](specs/003-ci-cd/) | PR checks and automatic releases (migrations, deploy, rollback) for API and web app |
 | [005-image-storage](specs/005-image-storage/) | Page images: direct uploads to private Cloudflare R2, stable redirect addresses, cleanup |
+| [011-rbac-middleware](specs/011-rbac-middleware/) | Reusable `@AdminOnly` guard: 401/403/allow authorization for admin-only operations, see [docs/rbac-middleware.md](docs/rbac-middleware.md) |
 
 ## Running locally
 

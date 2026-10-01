@@ -27,6 +27,9 @@ for _ in $(seq 1 30); do
 	sleep 1
 done
 
+# Use a fresh test-only signing key; the packaged app validates JWT settings at startup.
+APP_AUTH_JWT_SECRET_BASE64="$(openssl rand -base64 32)" \
+APP_AUTH_JWT_TTL_SECONDS=900 \
 SPRING_PROFILES_ACTIVE=lambda \
 SPRING_DATASOURCE_URL="jdbc:postgresql://127.0.0.1:${port}/postgres" \
 SPRING_DATASOURCE_USERNAME=postgres \

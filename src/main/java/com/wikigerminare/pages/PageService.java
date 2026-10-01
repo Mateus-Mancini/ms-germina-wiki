@@ -47,7 +47,8 @@ public class PageService {
 
         Page page = new Page();
 
-        page.setId(UUID.randomUUID());
+        // No manual id: Page uses @GeneratedValue, and an assigned id plus a version makes Spring Data treat
+        // the new page as an existing row (merge/update), which fails with an optimistic-locking error.
         page.setTitle(request.title());
         page.setSlug(request.slug());
         page.setContent(request.content());

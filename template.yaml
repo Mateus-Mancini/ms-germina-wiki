@@ -36,6 +36,16 @@ Parameters:
   R2SecretAccessKey:
     Type: String
     NoEcho: true
+  JwtSecretBase64:
+    Type: String
+    NoEcho: true
+    Description: HS256 signing key for access tokens (Base64, at least 32 bytes), e.g. openssl rand -base64 32
+  JwtTtlSeconds:
+    Type: Number
+    Default: 900
+    MinValue: 60
+    MaxValue: 3600
+    Description: Access token lifetime
 
 Globals:
   Function:
@@ -100,6 +110,8 @@ Resources:
           APP_STORAGE_BUCKET: !Ref R2Bucket
           APP_STORAGE_ACCESS_KEY_ID: !Ref R2AccessKeyId
           APP_STORAGE_SECRET_ACCESS_KEY: !Ref R2SecretAccessKey
+          APP_AUTH_JWT_SECRET_BASE64: !Ref JwtSecretBase64
+          APP_AUTH_JWT_TTL_SECONDS: !Ref JwtTtlSeconds
       # Daily removal of stored files of deleted images (spec 005). Invokes the 'live' alias directly,
       # never through the public Function URL; the handler recognises this payload.
       Events:

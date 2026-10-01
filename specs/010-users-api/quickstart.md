@@ -9,8 +9,13 @@
 ## Run focused tests
 
 ```powershell
-.\mvnw.cmd test -Dtest=UserServiceTest,UserControllerTest,UserApiPostgresIntegrationTest
+.\mvnw.cmd test "-Dtest=UserServiceTest,UserControllerTest"
+.\mvnw.cmd test "-Dtest=UserOwnProfilePostgresIntegrationTest,UserProfileUpdatePostgresIntegrationTest,UserPublicProfilePostgresIntegrationTest"
 ```
+
+The first selector runs unit and MockMvc tests without Docker. The second runs the
+PostgreSQL-backed scenarios and requires a working Docker daemon for Testcontainers.
+Run the selectors separately so the Docker requirement is explicit.
 
 Run all JVM tests after focused validation:
 

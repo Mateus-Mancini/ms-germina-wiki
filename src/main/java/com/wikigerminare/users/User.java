@@ -51,6 +51,10 @@ public class User {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getEmail() {
         return email;
     }
@@ -67,8 +71,16 @@ public class User {
         return avatarUrl;
     }
 
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
     public String getBio() {
         return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
     }
 
     public Instant getCreatedAt() {

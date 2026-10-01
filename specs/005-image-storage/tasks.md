@@ -85,8 +85,10 @@ description: "Task list for 005-image-storage"
 - [X] T021 `.github/workflows/release.yml` (pass the four R2 parameters from the `production` environment), and add the R2 values to `docs/ci-cd.md` §2
 - [X] T022 [P] `src/test/java/com/wikigerminare/R2LiveSmokeTest.java`, `@EnabledIfEnvironmentVariable(APP_STORAGE_ACCESS_KEY_ID)`: the full round trip against the configured bucket (quickstart §3)
 - [X] T023 [P] `docs/image-storage.md`: owner setup (Cloudflare account, `npx wrangler login`, bucket create, CORS from `infra/r2/cors.json`, lifecycle `pending/` 1 day, bucket-scoped R2 API token), secrets for `prod.env` and GitHub, operations (cleanup invocation, costs)
-- [ ] T024 Owner: R2 setup per `docs/image-storage.md`; run `R2LiveSmokeTest` locally against R2
-- [ ] T025 After merge: the release applies V2 and deploys; validate quickstart §3–§5 (401 before auth, 404 for an unknown image, cleanup `{"deleted":0}`, USD 0)
+- [X] T024 Owner: R2 setup per `docs/image-storage.md`; run `R2LiveSmokeTest` locally against R2
+  - Done by the owner (2026-10-01): bucket `germinawiki-images` (enam), CORS (web app + localhost:3000; PUT/GET/HEAD; Content-Type), lifecycle `pending-expiry` (1 day), bucket-scoped token, values in prod.env and the GitHub `production` environment. `R2LiveSmokeTest` against real R2: 2/2 passed (CORS preflight, presigned PUT, HEAD, copy, presigned GET with identical bytes, delete).
+- [X] T025 After merge: the release applies V2 and deploys; validate quickstart §3–§5 (401 before auth, 404 for an unknown image, cleanup `{"deleted":0}`, USD 0)
+  - Validated 2026-10-01 after the release of #15 (live version 12): V2 applied to production (schema version 2); `APP_STORAGE_*` set on the live alias; schedule `germinawiki-image-cleanup` ENABLED `cron(0 6 * * ? *)` with the workload boundary; manual cleanup invocation `{"deleted":0}`; unknown image address 404 (public). Found: signed-out calls to protected endpoints returned **502**. Cause: Spring Security's session-based request cache crashes the Lambda adapter on Function URL events. Fixed in #22 (stateless security + adapter-level test + a 401 check in the release verification).
 
 ---
 

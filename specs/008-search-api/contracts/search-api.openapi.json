@@ -1,0 +1,125 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "GerminaWiki Search API",
+    "version": "1.0.0",
+    "description": "Read-only full-text search over page titles and raw Markdown content. Uses the existing PostgreSQL English text-search configuration; Portuguese stemming may be less effective."
+  },
+  "paths": {
+    "/api/search": {
+      "get": {
+        "summary": "Search Wiki pages",
+        "description": "Returns matching pages ordered by full-text relevance descending, then page UUID ascending for ties. Without folderId, all pages including unfiled pages are eligible. With folderId, includeSubfolders controls whether descendants are included.",
+        "operationId": "searchPages",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Nonblank plain-text search query. Matching covers page title and raw Markdown content.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          },
+          {
+            "name": "folderId",
+            "in": "query",
+            "required": false,
+            "description": "Existing folder UUID. If absent, searches every page, including pages without a folder.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "includeSubfolders",
+            "in": "query",
+            "required": false,
+            "description": "When folderId is present, include pages in all descendant folders. Has no effect without folderId.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching pages in deterministic relevance order; an empty result is an empty array.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PageResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or blank q, malformed folder UUID, or invalid includeSubfolders value.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The supplied folder UUID does not identify an existing folder.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PageResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "slug",
+          "content",
+          "folderId",
+          "createdBy",
+          "updatedBy",
+          "createdAt",
+          "updatedAt",
+          "version"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string", "maxLength": 255 },
+          "slug": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "content": { "type": "string", "description": "Raw Markdown content." },
+          "folderId": { "type": ["string", "null"], "format": "uuid" },
+          "createdBy": { "type": "string", "format": "uuid" },
+          "updatedBy": { "type": ["string", "null"], "format": "uuid" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "version": { "type": "integer", "format": "int32", "minimum": 1 }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    }
+  }
+}

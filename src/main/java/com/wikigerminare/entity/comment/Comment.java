@@ -1,6 +1,7 @@
 package com.wikigerminare.entity.comment;
 
-import jakarta.persistence.CascadeType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -43,7 +44,8 @@ public class Comment {
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(nullable = false, columnDefinition = "comment_status")
     private Status status;
 
     @Column(name = "created_at", nullable = false)
@@ -52,7 +54,7 @@ public class Comment {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "parentComment", fetch = FetchType.LAZY)
     @OrderBy("createdAt ASC, id ASC")
     private List<Comment> replies = new ArrayList<>();
 
@@ -73,7 +75,6 @@ public class Comment {
     public static Comment reply(UUID id, Comment parent, UUID userId, String content, Instant createdAt) {
         Comment reply = new Comment(id, parent.getPageId(), userId, parent.getBlockId(), content, createdAt);
         reply.parentComment = parent;
-        parent.replies.add(reply);
         return reply;
     }
 

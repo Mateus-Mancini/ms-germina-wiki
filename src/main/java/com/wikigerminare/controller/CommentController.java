@@ -42,27 +42,27 @@ public class CommentController {
                                     @RequestParam(required = false) UUID blockId,
                                     @RequestParam(defaultValue = "0") int page,
                                     @RequestParam(defaultValue = "20") int size) {
-        return CommentPageResponse.from(commentService.list(pageId, blockId, page, size));
+        return commentService.list(pageId, blockId, page, size);
     }
 
     @PostMapping
     @Operation(summary = "Cria um comentário ancorado")
     public ResponseEntity<CommentResponse> create(@RequestBody CreateCommentRequest request) {
         var comment = commentService.create(request);
-        return ResponseEntity.created(URI.create("/api/comments/" + comment.getId()))
-                .body(CommentResponse.from(comment));
+        return ResponseEntity.created(URI.create("/api/comments/" + comment.id()))
+                .body(comment);
     }
 
     @GetMapping("/{commentId}")
     @Operation(summary = "Consulta um comentário ativo")
     public CommentResponse get(@PathVariable UUID commentId) {
-        return CommentResponse.from(commentService.get(commentId));
+        return commentService.get(commentId);
     }
 
     @PatchMapping("/{commentId}")
     @Operation(summary = "Edita o comentário do próprio autor")
     public CommentResponse update(@PathVariable UUID commentId, @RequestBody UpdateCommentRequest request) {
-        return CommentResponse.from(commentService.update(commentId, request));
+        return commentService.update(commentId, request);
     }
 
     @DeleteMapping("/{commentId}")
@@ -77,7 +77,7 @@ public class CommentController {
     public ResponseEntity<AdminReplyResponse> reply(@PathVariable UUID commentId,
                                                      @RequestBody CreateAdminReplyRequest request) {
         var reply = commentService.reply(commentId, request);
-        return ResponseEntity.created(URI.create("/api/comments/" + commentId + "/admin-replies/" + reply.getId()))
-                .body(AdminReplyResponse.from(reply));
+        return ResponseEntity.created(URI.create("/api/comments/" + commentId + "/admin-replies/" + reply.id()))
+                .body(reply);
     }
 }

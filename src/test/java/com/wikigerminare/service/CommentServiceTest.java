@@ -37,13 +37,13 @@ class CommentServiceTest {
     void createsCommentWithPageAndBlock() {
         when(userProvider.currentUser()).thenReturn(CommentTestFixtures.author());
 
-        Comment comment = service.create(new CreateCommentRequest(CommentTestFixtures.PAGE_ID,
+        var comment = service.create(new CreateCommentRequest(CommentTestFixtures.PAGE_ID,
                 new AnchorRequest(CommentTestFixtures.BLOCK_ID), "  dúvida  "));
 
-        assertEquals(CommentTestFixtures.PAGE_ID, comment.getPageId());
-        assertEquals(CommentTestFixtures.BLOCK_ID, comment.getBlockId());
-        assertEquals("dúvida", comment.getContent());
-        assertEquals(Comment.Status.OPEN, comment.getStatus());
+        assertEquals(CommentTestFixtures.PAGE_ID, comment.pageId());
+        assertEquals(CommentTestFixtures.BLOCK_ID, comment.anchor().blockId());
+        assertEquals("dúvida", comment.text());
+        assertEquals("OPEN", comment.status());
     }
 
     @Test
@@ -57,16 +57,16 @@ class CommentServiceTest {
     @Test
     void onlyAuthorCanEditComment() {
         when(userProvider.currentUser()).thenReturn(CommentTestFixtures.author());
-        Comment comment = service.create(new CreateCommentRequest(CommentTestFixtures.PAGE_ID,
+        var comment = service.create(new CreateCommentRequest(CommentTestFixtures.PAGE_ID,
                 new AnchorRequest(CommentTestFixtures.BLOCK_ID), "original"));
-        when(repository.findByIdAndStatus(comment.getId(), Comment.Status.OPEN)).thenReturn(Optional.of(comment));
+        when(repository.findByIdAndStatus(comment.id(), Comment.Status.OPEN)).thenReturn(Optional.of(new Comment(comment.id(), comment.pageId(), comment.userId(), comment.anchor().blockId(), comment.text(), comment.createdAt())));
         when(userProvider.currentUser()).thenReturn(CommentTestFixtures.otherUser());
 
         CommentException exception = assertThrows(CommentException.class,
-                () -> service.update(comment.getId(), new UpdateCommentRequest("changed")));
+                () -> service.update(comment.id(), new UpdateCommentRequest("changed")));
 
         assertEquals("FORBIDDEN", exception.code());
-        assertEquals("original", comment.getContent());
+        assertEquals("original", comment.text());
     }
 
     @Test

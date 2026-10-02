@@ -19,7 +19,13 @@ public class DatabaseContentAnchorValidator implements ContentAnchorValidator {
 
     @Override
     public void assertPublishedContent(UUID pageId) {
-        page(pageId);
+        // Pages currently have no publication/privacy states. Check existence without
+        // loading the entire document a second time during anchor validation.
+        Boolean exists = jdbcTemplate.queryForObject("SELECT EXISTS (SELECT 1 FROM pages WHERE id = ?)",
+                Boolean.class, pageId);
+        if (!Boolean.TRUE.equals(exists)) {
+            throw new CommentException("CONTENT_NOT_FOUND", "Page not found");
+        }
     }
 
     @Override
@@ -27,25 +33,22 @@ public class DatabaseContentAnchorValidator implements ContentAnchorValidator {
         if (anchorInput == null || anchorInput.blockId() == null) {
             throw new CommentException("ANCHOR_INVALID", "blockId is required");
         }
-        PageRecord page = page(pageId);
+        String content = pageContent(pageId);
         String marker = "<!--b:" + anchorInput.blockId() + "-->";
-        if (!page.content().contains(marker)) {
+        if (!content.contains(marker)) {
             throw new CommentException("ANCHOR_INVALID", "Block does not belong to page");
         }
         return new ValidatedAnchor(anchorInput.blockId());
     }
 
-    private PageRecord page(UUID pageId) {
+    private String pageContent(UUID pageId) {
         try {
             return jdbcTemplate.queryForObject(
-                    "SELECT content, version FROM pages WHERE id = ?",
-                    (resultSet, rowNum) -> new PageRecord(resultSet.getString("content"), resultSet.getInt("version")),
+                    "SELECT content FROM pages WHERE id = ?", String.class,
                     pageId);
         } catch (org.springframework.dao.EmptyResultDataAccessException exception) {
             throw new CommentException("CONTENT_NOT_FOUND", "Page not found");
         }
     }
 
-    private record PageRecord(String content, int version) {
-    }
 }

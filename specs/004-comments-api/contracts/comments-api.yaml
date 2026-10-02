@@ -2,7 +2,12 @@ openapi: 3.1.0
 info:
   title: GerminaWiki Comments API
   version: 1.0.0
-  description: Contrato de comentários ancorados e respostas administrativas.
+  description: >-
+    Comentários por pageId e anchor.blockId; todas as operações exigem Bearer JWT.
+    Respostas administrativas são imutáveis e vinculadas somente a raízes OPEN.
+    A remoção da raiz oculta suas respostas também na consulta individual.
+    Páginas existentes são elegíveis; o modelo atual não possui publicação ou privacidade.
+    Anchor validado pelo marcador de bloco no conteúdo atual, sem revisão no contrato.
 servers:
   - url: /
 security:
@@ -10,15 +15,23 @@ security:
 paths:
   /api/comments:
     get:
-      summary: Lista comentários ativos de um conteúdo
-      security: []
+      summary: Lista raízes OPEN por página e bloco
       parameters:
-        - $ref: '#/components/parameters/ContentId'
-        - $ref: '#/components/parameters/AnchorType'
-        - $ref: '#/components/parameters/AnchorValue'
+        - $ref: '#/components/parameters/PageId'
+        - $ref: '#/components/parameters/BlockId'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
       responses:
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: Operação no banco excedeu o limite ou conexão indisponível (COMMENT_STORAGE_UNAVAILABLE).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '200':
           description: Página de comentários ativos.
           content:
@@ -38,6 +51,12 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateCommentRequest'
       responses:
+        '503':
+          description: Operação no banco excedeu o limite ou conexão indisponível (COMMENT_STORAGE_UNAVAILABLE).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '201':
           description: Comentário criado.
           content:
@@ -57,8 +76,17 @@ paths:
       - $ref: '#/components/parameters/CommentId'
     get:
       summary: Consulta um comentário ativo
-      security: []
       responses:
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: Operação no banco excedeu o limite ou conexão indisponível (COMMENT_STORAGE_UNAVAILABLE).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '200':
           description: Comentário encontrado.
           content:
@@ -76,6 +104,12 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateCommentRequest'
       responses:
+        '503':
+          description: Operação no banco excedeu o limite ou conexão indisponível (COMMENT_STORAGE_UNAVAILABLE).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '200':
           description: Comentário atualizado.
           content:
@@ -95,6 +129,12 @@ paths:
     delete:
       summary: Remove logicamente o próprio comentário ou um comentário como administrador
       responses:
+        '503':
+          description: Operação no banco excedeu o limite ou conexão indisponível (COMMENT_STORAGE_UNAVAILABLE).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '204':
           description: Comentário removido ou já removido.
         '401':
@@ -115,6 +155,12 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateAdminReplyRequest'
       responses:
+        '503':
+          description: Operação no banco excedeu o limite ou conexão indisponível (COMMENT_STORAGE_UNAVAILABLE).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '201':
           description: Resposta criada.
           content:
@@ -137,25 +183,20 @@ components:
       type: http
       scheme: bearer
   parameters:
-    ContentId:
-      name: contentId
+    PageId:
+      name: pageId
       in: query
       required: true
       schema:
         type: string
         format: uuid
-    AnchorType:
-      name: anchorType
+    BlockId:
+      name: blockId
       in: query
       required: false
       schema:
         type: string
-    AnchorValue:
-      name: anchorValue
-      in: query
-      required: false
-      schema:
-        type: string
+        format: uuid
     CommentId:
       name: commentId
       in: path
@@ -183,21 +224,16 @@ components:
   schemas:
     Anchor:
       type: object
-      required: [type, value, revision]
+      required: [blockId]
       properties:
-        type:
+        blockId:
           type: string
-        value:
-          type: string
-        revision:
-          oneOf:
-            - type: string
-            - type: integer
+          format: uuid
     CreateCommentRequest:
       type: object
-      required: [contentId, anchor, text]
+      required: [pageId, anchor, text]
       properties:
-        contentId:
+        pageId:
           type: string
           format: uuid
         anchor:
@@ -205,6 +241,8 @@ components:
         text:
           type: string
           minLength: 1
+          maxLength: 2000
+          description: Texto após trim, limitado a 2000 unidades UTF-16 (String Java).
     UpdateCommentRequest:
       type: object
       required: [text]
@@ -212,6 +250,8 @@ components:
         text:
           type: string
           minLength: 1
+          maxLength: 2000
+          description: Texto após trim, limitado a 2000 unidades UTF-16 (String Java).
     CreateAdminReplyRequest:
       type: object
       required: [text]
@@ -219,6 +259,8 @@ components:
         text:
           type: string
           minLength: 1
+          maxLength: 2000
+          description: Texto após trim, limitado a 2000 unidades UTF-16 (String Java).
     AdminReply:
       type: object
       required: [id, commentId, adminId, text, createdAt]
@@ -239,15 +281,15 @@ components:
           format: date-time
     Comment:
       type: object
-      required: [id, contentId, authorId, anchor, text, status, createdAt, updatedAt, adminReplies]
+      required: [id, pageId, userId, anchor, text, status, createdAt, updatedAt, adminReplies]
       properties:
         id:
           type: string
           format: uuid
-        contentId:
+        pageId:
           type: string
           format: uuid
-        authorId:
+        userId:
           type: string
           format: uuid
         anchor:
@@ -256,7 +298,7 @@ components:
           type: string
         status:
           type: string
-          enum: [ACTIVE]
+          enum: [OPEN]
         createdAt:
           type: string
           format: date-time
@@ -320,7 +362,7 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
     ContentUnavailable:
-      description: Conteúdo não publicado ou indisponível.
+      description: Conteúdo indisponível (reservado para futura política de publicação).
       content:
         application/json:
           schema:
@@ -332,7 +374,7 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
     AnchorInvalid:
-      description: Anchor inválido ou desatualizado.
+      description: Bloco ausente do conteúdo atual da página.
       content:
         application/json:
           schema:

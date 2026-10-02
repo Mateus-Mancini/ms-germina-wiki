@@ -1,82 +1,31 @@
 # Data Model: Comments API
 
-## Comment
+Contrato vigente em 01/10/2026. Todas as operações exigem autenticação.
 
-Representa uma contribuição textual vinculada a um conteúdo e a uma posição desse conteúdo.
+| Campo | Tipo | Regra |
+|---|---|---|
+| id | UUID | Imutável |
+| pageId | UUID | Página existente |
+| userId | UUID | Identidade autenticada, nunca escolhida no JSON |
+| anchor.blockId | UUID | Marcador `<!--b:UUID-->` presente no conteúdo atual |
+| text | string | Trim, 1 a 2000 unidades UTF-16 |
+| status | enum | OPEN ou RESOLVED; enum nativo PostgreSQL comment_status |
+| createdAt | timestamp | Criação |
+| updatedAt | timestamp | Edição ou remoção |
+| adminReplies | array | Respostas OPEN, por createdAt ASC e id ASC |
 
-| Field | Type | Required | Rules |
-|---|---|---:|---|
-| `id` | UUID | yes | Identificador único e imutável. |
-| `contentId` | UUID | yes | Deve referenciar conteúdo existente, publicado e disponível. |
-| `authorId` | UUID | yes | Identidade do usuário que criou o comentário; não pode ser alterada. |
-| `text` | string | yes | Não pode ser vazio após trim; deve respeitar o limite máximo definido para a feature. |
-| `anchorType` | enum/string | yes | Tipo suportado pelo conteúdo; o valor deve ser validado pelo verificador de anchors. |
-| `anchorValue` | string | yes | Valor canônico da posição; deve pertencer ao `contentId`. |
-| `contentRevision` | string/long | yes | Revisão do conteúdo usada na validação do anchor. |
-| `status` | enum | yes | `ACTIVE` ou `REMOVED`; remoção lógica. |
-| `createdAt` | timestamp | yes | Preenchido na criação e imutável. |
-| `updatedAt` | timestamp | yes | Atualizado somente quando o texto for editado. |
+Raízes e respostas compartilham a tabela comments. Respostas têm parent_comment_id,
+herdam page_id e block_id, e são persistidas explicitamente sem cascade do pai.
+O DTO de resposta administrativa contém id, commentId, adminId, text e createdAt.
 
-### Relationships
+Somente o autor edita raízes; autor ou administrador remove. Respostas são imutáveis,
+não recebem respostas e só podem ser criadas por administrador para raiz OPEN.
+Raízes RESOLVED e suas respostas ficam ocultas em consultas individuais e listagens.
+A remoção é idempotente e não restaura nenhum registro.
 
-- Um `Comment` pertence a um `Content` por `contentId`.
-- Um `Comment` pertence a um `User` por `authorId`.
-- Um `Comment` pode possuir zero ou mais `AdminReply`.
-- O anchor é validado contra o conteúdo e não é uma entidade independente nesta feature.
+Listagens paginam somente raízes OPEN por createdAt DESC e id DESC. As respostas dos
+IDs dessa página são carregadas em lote; DTOs são materializados dentro da transação.
 
-## AdminReply
-
-Representa uma resposta publicada por um administrador para um comentário ativo.
-
-| Field | Type | Required | Rules |
-|---|---|---:|---|
-| `id` | UUID | yes | Identificador único e imutável. |
-| `commentId` | UUID | yes | Deve referenciar comentário `ACTIVE`. |
-| `adminId` | UUID | yes | Deve representar usuário com permissão administrativa no momento da criação. |
-| `text` | string | yes | Não pode ser vazio após trim; deve respeitar o limite máximo definido. |
-| `createdAt` | timestamp | yes | Preenchido na criação e imutável. |
-
-### Relationships
-
-- Uma `AdminReply` pertence a exatamente um `Comment`.
-- Uma resposta não pode existir sem comentário ativo.
-- A consulta de um comentário ativo inclui suas respostas administrativas ordenadas por criação.
-- Comentário removido e suas respostas não aparecem no conteúdo ativo.
-
-## Value Objects and Integration Ports
-
-### AnchorInput
-
-- `type`: tipo de selector suportado pelo conteúdo.
-- `value`: valor canônico do selector.
-- `revision`: revisão opcional informada pelo consumidor; a revisão efetivamente validada é retornada pelo verificador.
-
-### AuthenticatedUser
-
-- `id`: identificador do usuário autenticado.
-- `isAdmin`: permissão usada somente para moderação e respostas administrativas.
-
-### ContentAnchorValidator
-
-Contrato de integração consumido pelo serviço:
-
-- `assertPublishedContent(contentId)`: confirma existência e disponibilidade do conteúdo.
-- `validateAnchor(contentId, anchorInput)`: confirma formato, pertencimento e revisão; retorna anchor normalizado.
-
-## State Transitions
-
-```text
-Comment: ACTIVE -> REMOVED
-Comment: ACTIVE -> ACTIVE (texto editado; updatedAt muda)
-Comment: REMOVED -> REMOVED (remoção repetida é idempotente)
-AdminReply: criado somente para Comment ACTIVE; não possui edição ou restauração na v1
-```
-
-## Validation and Invariants
-
-- `contentId`, `authorId`, `text`, `anchorType` e `anchorValue` são obrigatórios.
-- O serviço valida conteúdo e anchor antes de persistir qualquer comentário.
-- Edição não pode trocar `contentId`, `authorId`, `anchorType` ou `anchorValue`.
-- Somente o autor edita/remove seu comentário; administrador pode remover qualquer comentário ativo.
-- Somente administrador cria `AdminReply`, e o comentário alvo precisa estar ativo.
-- Consultas ativas filtram `status = ACTIVE` e são ordenadas por `createdAt DESC, id DESC`.
+O nome legado assertPublishedContent verifica existência via pages. O modelo atual
+não possui estados de publicação/privacidade. validateAnchor verifica o marcador no
+conteúdo atual; revisão não integra o contrato nem é usada para validar anchors.

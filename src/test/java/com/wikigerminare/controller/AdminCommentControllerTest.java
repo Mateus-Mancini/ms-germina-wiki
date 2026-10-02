@@ -44,7 +44,7 @@ class AdminCommentControllerTest {
         Comment comment = new Comment(commentId, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 "question", Instant.now());
         Comment reply = Comment.reply(UUID.randomUUID(), comment, UUID.randomUUID(), "answer", Instant.now());
-        when(service.reply(eq(commentId), any(CreateAdminReplyRequest.class))).thenReturn(reply);
+        when(service.reply(eq(commentId), any(CreateAdminReplyRequest.class))).thenReturn(com.wikigerminare.dto.comment.AdminReplyResponse.from(reply));
 
         mockMvc.perform(post("/api/comments/{id}/admin-replies", commentId)
                         .contentType(MediaType.APPLICATION_JSON)

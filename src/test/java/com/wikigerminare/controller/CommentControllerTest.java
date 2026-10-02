@@ -49,7 +49,7 @@ class CommentControllerTest {
         UUID id = UUID.randomUUID();
         Comment comment = new Comment(id, CommentTestFixtures.PAGE_ID, UUID.randomUUID(),
                 CommentTestFixtures.BLOCK_ID, "text", Instant.now());
-        when(service.create(any(CreateCommentRequest.class))).thenReturn(comment);
+        when(service.create(any(CreateCommentRequest.class))).thenReturn(com.wikigerminare.dto.comment.CommentResponse.from(comment));
 
         mockMvc.perform(post("/api/comments")
                         .contentType(MediaType.APPLICATION_JSON)

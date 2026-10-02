@@ -1,5 +1,7 @@
 package com.wikigerminare.controller;
 
+import com.wikigerminare.security.AdminOnly;
+
 import java.security.Principal;
 import java.time.Duration;
 import java.util.List;
@@ -39,6 +41,7 @@ public class ImageController {
 		this.imageService = imageService;
 	}
 
+	@AdminOnly
 	@PostMapping("/api/pages/{pageId}/images/uploads")
 	@ResponseStatus(HttpStatus.CREATED)
 	public UploadPermission requestUpload(@PathVariable UUID pageId, @Valid @RequestBody UploadRequest request,
@@ -46,6 +49,7 @@ public class ImageController {
 		return imageService.requestUpload(pageId, request, currentUserId(principal));
 	}
 
+	@AdminOnly
 	@PostMapping("/api/pages/{pageId}/images")
 	@ResponseStatus(HttpStatus.CREATED)
 	public ImageResponse confirmUpload(@PathVariable UUID pageId, @Valid @RequestBody ConfirmRequest request,
@@ -70,6 +74,7 @@ public class ImageController {
 			.build();
 	}
 
+	@AdminOnly
 	@DeleteMapping("/api/images/{imageId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void delete(@PathVariable UUID imageId, Principal principal) {

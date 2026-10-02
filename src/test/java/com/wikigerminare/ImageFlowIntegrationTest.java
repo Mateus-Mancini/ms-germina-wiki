@@ -86,7 +86,7 @@ class ImageFlowIntegrationTest {
 		assertThat(putBytes(uploadUrl, "image/png", PNG)).isEqualTo(200);
 
 		String image = mvc
-			.perform(post("/api/pages/{pageId}/images", pageId).with(user(userId.toString()))
+			.perform(post("/api/pages/{pageId}/images", pageId).with(user(userId.toString()).roles("ADMIN"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"uploadKey\":\"" + key + "\",\"fileName\":\"trip.png\"}"))
 			.andExpect(status().isCreated())
@@ -130,7 +130,7 @@ class ImageFlowIntegrationTest {
 		s3.putObject(request -> request.bucket(storageProperties.bucket()).key(key).contentType("text/html"),
 				RequestBody.fromBytes(PNG));
 
-		mvc.perform(post("/api/pages/{pageId}/images", pageId).with(user(userId.toString()))
+		mvc.perform(post("/api/pages/{pageId}/images", pageId).with(user(userId.toString()).roles("ADMIN"))
 			.contentType(MediaType.APPLICATION_JSON)
 			.content("{\"uploadKey\":\"" + key + "\",\"fileName\":\"x.html\"}")).andExpect(status().isConflict());
 
@@ -160,7 +160,7 @@ class ImageFlowIntegrationTest {
 		UUID imageId = uploadAndConfirm();
 		String objectKey = objectKeyOf(imageId);
 
-		mvc.perform(delete("/api/images/{imageId}", imageId).with(user(userId.toString()))).andExpect(status().isNoContent());
+		mvc.perform(delete("/api/images/{imageId}", imageId).with(user(userId.toString()).roles("ADMIN"))).andExpect(status().isNoContent());
 
 		assertThat(storage.head(objectKey)).isEmpty();
 		mvc.perform(get("/api/images/{imageId}", imageId)).andExpect(status().isNotFound());
@@ -186,7 +186,7 @@ class ImageFlowIntegrationTest {
 		String key = JsonPath.read(permission, "$.uploadKey");
 		assertThat(putBytes(URI.create(JsonPath.read(permission, "$.uploadUrl")), "image/png", PNG)).isEqualTo(200);
 		String image = mvc
-			.perform(post("/api/pages/{pageId}/images", pageId).with(user(userId.toString()))
+			.perform(post("/api/pages/{pageId}/images", pageId).with(user(userId.toString()).roles("ADMIN"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"uploadKey\":\"" + key + "\",\"fileName\":\"a.png\"}"))
 			.andExpect(status().isCreated())
@@ -206,7 +206,7 @@ class ImageFlowIntegrationTest {
 
 	private String requestUpload(String contentType, int size) throws Exception {
 		return mvc
-			.perform(post("/api/pages/{pageId}/images/uploads", pageId).with(user(userId.toString()))
+			.perform(post("/api/pages/{pageId}/images/uploads", pageId).with(user(userId.toString()).roles("ADMIN"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"contentType\":\"" + contentType + "\",\"size\":" + size + "}"))
 			.andExpect(status().isCreated())

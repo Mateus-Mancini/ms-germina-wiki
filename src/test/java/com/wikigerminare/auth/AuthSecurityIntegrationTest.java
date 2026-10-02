@@ -52,7 +52,7 @@ class AuthSecurityIntegrationTest {
         String email = "principal-" + userId + "@example.com";
         jdbc.update("""
                 INSERT INTO users (id, name, email, password_hash, role)
-                VALUES (?, 'Principal test', ?, ?, CAST('member' AS user_role))
+                VALUES (?, 'Principal test', ?, ?, CAST('admin' AS user_role))
                 """, userId, email, passwordEncoder.encode("correct password"));
         String body = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -71,6 +71,18 @@ class AuthSecurityIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         assertThat(JsonPath.<String>read(response, "$.createdBy")).isEqualTo(userId.toString());
+
+        String memberToken = signedToken(userId, "member", Instant.now(), Instant.now().plusSeconds(600));
+        mockMvc.perform(post("/api/folders")
+                        .header("Authorization", "Bearer " + memberToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"member-" + userId + "\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/pages")
+                        .header("Authorization", "Bearer " + memberToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"t\",\"slug\":\"member-" + userId + "\",\"content\":\"c\",\"folderId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/api/folders"))
                 .andExpect(status().isUnauthorized());

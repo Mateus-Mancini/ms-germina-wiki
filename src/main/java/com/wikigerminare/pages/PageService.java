@@ -151,7 +151,8 @@ public class PageService {
         }
 
         if (!request.isTitleProvided()
-                && !request.isContentProvided()) {
+                && !request.isContentProvided()
+                && !request.isFolderIdProvided()) {
 
             throw new PageValidationException(
                     "At least one field must be provided for update"
@@ -181,6 +182,23 @@ public class PageService {
             }
 
             page.setContent(request.getContent());
+        }
+
+        if (request.isFolderIdProvided()) {
+
+            if (request.getFolderId() == null) {
+
+                throw new PageValidationException(
+                        "folderId must not be null"
+                );
+            }
+
+            folderRepository.findById(request.getFolderId())
+                    .orElseThrow(() ->
+                            new FolderNotFoundException(
+                                    request.getFolderId()));
+
+            page.setFolderId(request.getFolderId());
         }
 
         page.setUpdatedBy(updatedBy);

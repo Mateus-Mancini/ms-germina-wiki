@@ -19,6 +19,7 @@ The Spec Kit commands are installed for **GitHub Copilot** (`.github/skills/`, P
 | [003-ci-cd](specs/003-ci-cd/) | PR checks and automatic releases (migrations, deploy, rollback) for API and web app |
 | [005-image-storage](specs/005-image-storage/) | Page images: direct uploads to private Cloudflare R2, stable redirect addresses, cleanup |
 | [011-rbac-middleware](specs/011-rbac-middleware/) | Reusable `@AdminOnly` guard: 401/403/allow authorization for admin-only operations, see [docs/rbac-middleware.md](docs/rbac-middleware.md) |
+| [012-user-signup](specs/012-user-signup/) | Public member registration, validation and duplicate-email protection; reuses existing login and profile APIs |
 
 ## Running locally
 
@@ -45,8 +46,28 @@ $env:APP_AUTH_JWT_SECRET_BASE64 = [Convert]::ToBase64String($key)
 $env:APP_AUTH_JWT_TTL_SECONDS = "900"
 ```
 
-Accounts must already exist in the `users` table with a BCrypt-compatible
-`password_hash` and a `role` of `admin` or `member`; auth-api does not create accounts.
+Create a member account through public `POST /api/auth/register`:
+
+```json
+{"name":"Student","email":"student@example.com","password":"correct password"}
+```
+
+Registration returns `201 Created` with the user's safe profile and a `Location`
+header. Then call `POST /api/auth/login` with `email` and `password`, and use the
+returned Bearer token for `GET /api/users/me` and other protected routes. Registration
+does not issue a token or accept administrator roles.
+
+Name and email have outside whitespace removed; email remains case-sensitive as
+in the existing login. Name is required and at most 150 characters, email must be
+valid and at most 255 characters, and password must be nonblank, at least 8 characters
+and at most 72 UTF-8 bytes (without trimming or truncation). Invalid requests and
+unknown fields return `400`; an existing email returns `409`, including simultaneous
+registration attempts. Passwords are stored only as BCrypt hashes and are never
+returned. See the [registration contract](specs/012-user-signup/contracts/registration.md)
+and [validation guide](specs/012-user-signup/quickstart.md).
+
+Existing accounts in `users` continue to use a BCrypt-compatible `password_hash`
+and a `role` of `admin` or `member`.
 Production must receive the same variables from the approved secrets manager through
 environment infrastructure.
 

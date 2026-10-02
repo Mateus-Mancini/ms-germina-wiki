@@ -40,7 +40,7 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll()
                 // Image addresses are embedded in pages and loaded by <img> tags, which send no credentials
                 // (spec 005, FR-006); they redirect to short-lived signed URLs.
                 .requestMatchers(HttpMethod.GET, "/api/images/*").permitAll()

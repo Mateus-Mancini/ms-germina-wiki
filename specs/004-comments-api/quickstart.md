@@ -1,64 +1,34 @@
 # Quickstart: Comments API
 
-## Prerequisites
-
-- Java 21 disponível no ambiente.
-- Maven Wrapper do repositório (`mvnw.cmd`) disponível.
-- PostgreSQL configurado conforme as variáveis usadas pelo ambiente.
-- Integrações de identidade autenticada e conteúdo publicado/anchor configuradas, conforme descrito em [data-model.md](data-model.md).
-
-## Validation Commands
-
-Para validar a migração contra PostgreSQL real, configure `POSTGRES_TEST_URL`,
-`POSTGRES_TEST_USER` e `POSTGRES_TEST_PASSWORD` antes dos testes.
-
-Na raiz do repositório:
+Requer JDK 21+, Maven Wrapper e Docker para PostgreSQL 18 descartável com Flyway.
+Nenhuma credencial ou conexão ao banco de produção é necessária para os testes.
 
 ```powershell
-.\mvnw.cmd test
+.\mvnw.cmd '-DargLine=-Djava.net.preferIPv4Stack=true' test '-Dtest=*Comment*Test,SchemaMigrationTest,LambdaSecurityTest'
 ```
 
-A execução deve concluir sem falhas e incluir testes unitários da camada de serviço, testes de persistência e testes de contrato HTTP da feature.
+Todas as requisições exigem `Authorization: Bearer <token>`, inclusive GET.
+Criação (`POST /api/comments`, Content-Type application/json):
 
-Para executar a aplicação localmente depois que o banco e as integrações estiverem disponíveis:
-
-```powershell
-.\mvnw.cmd spring-boot:run
+```json
+{"pageId":"UUID_DA_PAGINA","anchor":{"blockId":"UUID_DO_BLOCO"},"text":"Minha dúvida"}
 ```
 
-## Acceptance Scenarios
+A página deve existir e conter `<!--b:UUID_DO_BLOCO-->`. Confirme 201, Location,
+pageId, userId, anchor.blockId, text normalizado, status OPEN e adminReplies.
+Liste com `GET /api/comments?pageId=UUID_DA_PAGINA&blockId=UUID_DO_BLOCO&page=0&size=20`.
+Consulte por `GET /api/comments/{id}`; edite como autor com PATCH e `{"text":"Novo texto"}`;
+remova com DELETE (204, inclusive na repetição).
 
-### 1. Criar e consultar comentário ancorado
+Administrador responde com `POST /api/comments/{id}/admin-replies` e `{"text":"Resposta"}`.
+Confirme 201 e resposta visível após commit. Respostas não podem ser editadas nem
+receber outras respostas. Após remover a raiz, a consulta do filho também deve retornar 404.
 
-1. Obter um `contentId` publicado e um anchor válido.
-2. Enviar `POST /api/comments` com `contentId`, `anchor` e texto não vazio.
-3. Confirmar `201`, identificador, autor, anchor normalizado, datas e status ativo.
-4. Consultar `GET /api/comments?contentId={contentId}&anchorType={type}&anchorValue={value}`.
-5. Confirmar que o item aparece somente no conteúdo e anchor informados.
+Valide 400 para UUID/JSON malformado, pageId ausente, texto inválido e paginação inválida;
+401 para ausência de autenticação, 403 para falta de permissão e 409 para bloco ausente.
+Os testes de PostgreSQL também seguram um lock na identidade do autor para verificar
+que a criação retorna 503 COMMENT_STORAGE_UNAVAILABLE antes dos 20 segundos da Lambda,
+sem gravar comentário parcial. Timeouts indicam falha da operação e ficam nos logs.
 
-### 2. Rejeitar anchor inválido
-
-1. Enviar criação com anchor inexistente, malformado ou pertencente a outro conteúdo.
-2. Confirmar `400` para formato inválido ou `409` para anchor inexistente/desatualizado, conforme o contrato.
-3. Confirmar que nenhum comentário parcial foi persistido.
-
-### 3. Restringir edição e remoção
-
-1. Criar comentário como usuário A.
-2. Tentar `PATCH` e `DELETE` como usuário B.
-3. Confirmar `403` e verificar que o comentário original não foi alterado.
-4. Repetir como usuário A e confirmar atualização e remoção lógica.
-
-### 4. Resposta administrativa
-
-1. Criar comentário ativo.
-2. Enviar `POST /api/comments/{commentId}/admin-replies` com identidade administrativa.
-3. Confirmar `201` e vínculo com o comentário.
-4. Repetir sem permissão administrativa e confirmar `403`.
-5. Remover o comentário e confirmar que ele e suas respostas deixam de aparecer nas consultas ativas.
-
-## Contract and Model References
-
-- Endpoints, códigos e schemas: [contracts/comments-api.yaml](contracts/comments-api.yaml)
-- Entidades, invariantes e estados: [data-model.md](data-model.md)
-- Regras de negócio e cenários: [spec.md](spec.md)
+Contrato: [comments-api.yaml](contracts/comments-api.yaml). Política de publicação,
+privacidade e revisão ainda depende de extensão do modelo de páginas.

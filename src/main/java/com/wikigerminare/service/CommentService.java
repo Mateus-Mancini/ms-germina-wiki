@@ -1,6 +1,9 @@
 package com.wikigerminare.service;
 
 import com.wikigerminare.dto.comment.AnchorRequest;
+import com.wikigerminare.dto.comment.CommentResponse;
+import com.wikigerminare.dto.comment.CommentPageResponse;
+import com.wikigerminare.dto.comment.AdminReplyResponse;
 import com.wikigerminare.dto.comment.CreateAdminReplyRequest;
 import com.wikigerminare.dto.comment.CreateCommentRequest;
 import com.wikigerminare.dto.comment.UpdateCommentRequest;
@@ -19,9 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
-@Transactional
+@Transactional(timeout = 8)
 public class CommentService {
     private static final Sort COMMENT_ORDER = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
 
@@ -37,7 +44,39 @@ public class CommentService {
         this.contentValidator = contentValidator;
     }
 
-    public Comment create(CreateCommentRequest request) {
+    // HTTP responses are fully materialized before the service transaction commits.
+    public CommentResponse create(CreateCommentRequest request) {
+        return CommentResponse.from(createEntity(request));
+    }
+
+    @Transactional(readOnly = true, timeout = 8)
+    public CommentResponse get(UUID id) {
+        return CommentResponse.from(getActiveComment(id));
+    }
+
+    public CommentResponse update(UUID id, UpdateCommentRequest request) {
+        return CommentResponse.from(updateEntity(id, request));
+    }
+
+    public AdminReplyResponse reply(UUID id, CreateAdminReplyRequest request) {
+        return AdminReplyResponse.from(createReply(id, request));
+    }
+
+    @Transactional(readOnly = true, timeout = 8)
+    public CommentPageResponse list(UUID pageId, UUID blockId, int page, int size) {
+        Page<Comment> roots = findRoots(pageId, blockId, page, size);
+        List<CommentResponse> items = List.of();
+        if (!roots.isEmpty()) {
+            Map<UUID, Comment> loaded = commentRepository.findWithRepliesByIdIn(
+                    roots.stream().map(Comment::getId).toList()).stream()
+                    .collect(Collectors.toMap(Comment::getId, Function.identity()));
+            items = roots.stream().map(root -> CommentResponse.from(loaded.get(root.getId()))).toList();
+        }
+        return new CommentPageResponse(items, roots.getNumber(), roots.getSize(),
+                roots.getTotalElements(), roots.getTotalPages());
+    }
+
+    private Comment createEntity(CreateCommentRequest request) {
         AuthenticatedUser user = currentUser();
         if (request == null || request.pageId() == null || request.anchor() == null) {
             throw validation("pageId and blockId are required");
@@ -49,16 +88,23 @@ public class CommentService {
         return commentRepository.save(comment);
     }
 
-    @Transactional(readOnly = true)
-    public Comment get(UUID commentId) {
-        return commentRepository.findByIdAndStatus(commentId, Comment.Status.OPEN)
+    private Comment getActiveComment(UUID commentId) {
+        Comment comment = commentRepository.findByIdAndStatus(commentId, Comment.Status.OPEN)
                 .orElseThrow(() -> new CommentException("COMMENT_NOT_FOUND", "Comment not found"));
+        if (comment.getParentComment() != null && comment.getParentComment().getStatus() != Comment.Status.OPEN) {
+            throw new CommentException("COMMENT_NOT_FOUND", "Comment not found");
+        }
+        contentValidator.assertPublishedContent(comment.getPageId());
+        return comment;
     }
 
-    public Comment update(UUID commentId, UpdateCommentRequest request) {
+    private Comment updateEntity(UUID commentId, UpdateCommentRequest request) {
         AuthenticatedUser user = currentUser();
-        Comment comment = get(commentId);
+        Comment comment = getActiveComment(commentId);
         requireOwner(comment, user);
+        if (comment.getParentComment() != null) {
+            throw new CommentException("FORBIDDEN", "Administrative replies cannot be edited");
+        }
         String content = normalizeText(request == null ? null : request.text());
         validateAnchor(comment.getPageId(), new AnchorRequest(comment.getBlockId()));
         comment.updateContent(content, Instant.now());
@@ -76,8 +122,7 @@ public class CommentService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public Page<Comment> list(UUID pageId, UUID blockId, int page, int size) {
+    private Page<Comment> findRoots(UUID pageId, UUID blockId, int page, int size) {
         if (pageId == null) {
             throw validation("pageId is required");
         }
@@ -96,12 +141,16 @@ public class CommentService {
                 pageId, blockId, Comment.Status.OPEN, request);
     }
 
-    public Comment reply(UUID commentId, CreateAdminReplyRequest request) {
+    private Comment createReply(UUID commentId, CreateAdminReplyRequest request) {
         AuthenticatedUser user = currentUser();
         if (!user.isAdmin()) {
             throw new CommentException("FORBIDDEN", "Administrator permission is required");
         }
-        Comment parent = get(commentId);
+        Comment parent = getActiveComment(commentId);
+        if (parent.getParentComment() != null) {
+            throw validation("Replies can only target a root comment");
+        }
+        validateAnchor(parent.getPageId(), new AnchorRequest(parent.getBlockId()));
         String content = normalizeText(request == null ? null : request.text());
         Comment reply = Comment.reply(UUID.randomUUID(), parent, user.id(), content, Instant.now());
         return commentRepository.save(reply);

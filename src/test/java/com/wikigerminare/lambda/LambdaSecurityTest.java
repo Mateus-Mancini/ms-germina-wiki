@@ -76,6 +76,68 @@ class LambdaSecurityTest {
 		assertThat(statusOf("GET", "/api/folders", "*/*", signedToken())).isEqualTo(200);
 	}
 
+	@Test
+	@org.junit.jupiter.api.Timeout(15)
+	void commentsCompleteThroughFunctionUrlAdapterWithRealIdentityAndPostgres() {
+		var application = org.springframework.web.context.support.WebApplicationContextUtils
+				.getRequiredWebApplicationContext(handler.getServletContext());
+		var jdbc = application.getBean(org.springframework.jdbc.core.JdbcTemplate.class);
+		UUID author = UUID.randomUUID();
+		UUID admin = UUID.randomUUID();
+		UUID page = UUID.randomUUID();
+		UUID block = UUID.randomUUID();
+		jdbc.update("INSERT INTO users (id,name,email,password_hash,role) VALUES (?,?,?,?,?::user_role)",
+				author, "Author", author + "@example.invalid", "unused", "member");
+		jdbc.update("INSERT INTO users (id,name,email,password_hash,role) VALUES (?,?,?,?,?::user_role)",
+				admin, "Admin", admin + "@example.invalid", "unused", "admin");
+		jdbc.update("INSERT INTO pages (id,title,slug,content,created_by) VALUES (?,?,?,?,?)",
+				page, "Lambda comments", page.toString(), "<!--b:" + block + "-->paragraph", author);
+		String authorToken = signedToken(author, "member");
+		String adminToken = signedToken(admin, "admin");
+		String body = "{\"pageId\":\"" + page + "\",\"anchor\":{\"blockId\":\"" + block
+				+ "\"},\"text\":\"  question  \"}";
+		AwsProxyResponse created = responseOf("POST", "/api/comments", authorToken, body);
+		assertThat(created.getStatusCode()).isEqualTo(201);
+		String id = com.jayway.jsonpath.JsonPath.read(created.getBody(), "$.id");
+		assertThat(com.jayway.jsonpath.JsonPath.<String>read(created.getBody(), "$.userId"))
+				.isEqualTo(author.toString());
+		assertThat(responseOf("GET", "/api/comments/" + id, authorToken, null).getStatusCode()).isEqualTo(200);
+		assertThat(responseOf("PATCH", "/api/comments/" + id, authorToken,
+				"{\"text\":\"edited\"}").getStatusCode()).isEqualTo(200);
+		assertThat(responseOf("POST", "/api/comments/" + id + "/admin-replies", authorToken,
+				"{\"text\":\"answer\"}").getStatusCode()).isEqualTo(403);
+		AwsProxyResponse reply = responseOf("POST", "/api/comments/" + id + "/admin-replies", adminToken,
+				"{\"text\":\"answer\"}");
+		assertThat(reply.getStatusCode()).isEqualTo(201);
+		String replyId = com.jayway.jsonpath.JsonPath.read(reply.getBody(), "$.id");
+		AwsProxyResponse loaded = responseOf("GET", "/api/comments/" + id, authorToken, null);
+		assertThat(com.jayway.jsonpath.JsonPath.<String>read(loaded.getBody(), "$.adminReplies[0].text"))
+				.isEqualTo("answer");
+		assertThat(responseOf("PATCH", "/api/comments/" + replyId, adminToken,
+				"{\"text\":\"changed\"}").getStatusCode()).isEqualTo(403);
+		assertThat(responseOf("DELETE", "/api/comments/" + id, authorToken, null).getStatusCode()).isEqualTo(204);
+		assertThat(responseOf("GET", "/api/comments/" + replyId, authorToken, null).getStatusCode()).isEqualTo(404);
+	}
+
+	private static AwsProxyResponse responseOf(String method, String path, String token, String body) {
+		HttpApiV2HttpContext http = new HttpApiV2HttpContext();
+		http.setMethod(method);
+		http.setPath(path);
+		http.setProtocol("HTTP/1.1");
+		http.setSourceIp("127.0.0.1");
+		HttpApiV2ProxyRequestContext context = new HttpApiV2ProxyRequestContext();
+		context.setHttp(http);
+		context.setRequestId("comments-lambda-test");
+		HttpApiV2ProxyRequest request = new HttpApiV2ProxyRequest();
+		request.setVersion("2.0");
+		request.setRawPath(path);
+		request.setHeaders(Map.of("accept", "application/json", "content-type", "application/json",
+				"authorization", "Bearer " + token));
+		request.setBody(body);
+		request.setRequestContext(context);
+		return handler.proxy(request, lambdaContext());
+	}
+
 	private static int statusOf(String method, String path, String accept) {
 		return statusOf(method, path, accept, null);
 	}
@@ -101,6 +163,10 @@ class LambdaSecurityTest {
 	}
 
 	private static String signedToken() {
+		return signedToken(UUID.randomUUID(), "member");
+	}
+
+	private static String signedToken(UUID userId, String role) {
 		AuthJwtProperties properties = new AuthJwtProperties(
 				"VGhpc0lzQVRlc3RPbmx5U2VjcmV0S2V5Rm9yS2V5RGVyaXZhdGlvbg==", 900);
 		NimbusJwtEncoder encoder = new NimbusJwtEncoder(
@@ -108,10 +174,10 @@ class LambdaSecurityTest {
 		Instant now = Instant.now();
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 				.issuer(AuthJwtProperties.ISSUER)
-				.subject(UUID.randomUUID().toString())
+				.subject(userId.toString())
 				.issuedAt(now)
 				.expiresAt(now.plusSeconds(300))
-				.claim("role", "member")
+				.claim("role", role)
 				.build();
 		return encoder.encode(JwtEncoderParameters.from(
 				JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();

@@ -43,7 +43,7 @@ class CommentQueryControllerTest {
         Comment comment = new Comment(UUID.randomUUID(), pageId, UUID.randomUUID(), CommentTestFixtures.BLOCK_ID,
                 "text", Instant.now());
         when(service.list(eq(pageId), eq(CommentTestFixtures.BLOCK_ID), anyInt(), anyInt()))
-                .thenReturn(new PageImpl<>(List.of(comment), PageRequest.of(0, 20), 1));
+                .thenReturn(com.wikigerminare.dto.comment.CommentPageResponse.from(new PageImpl<>(List.of(comment), PageRequest.of(0, 20), 1)));
 
         mockMvc.perform(get("/api/comments")
                         .param("pageId", pageId.toString())

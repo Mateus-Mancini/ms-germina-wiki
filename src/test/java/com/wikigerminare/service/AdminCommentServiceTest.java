@@ -38,11 +38,14 @@ class AdminCommentServiceTest {
         when(userProvider.currentUser()).thenReturn(CommentTestFixtures.admin());
         when(repository.findByIdAndStatus(parent.getId(), Comment.Status.OPEN)).thenReturn(Optional.of(parent));
 
-        Comment reply = service.reply(parent.getId(), new CreateAdminReplyRequest("resposta"));
+        var reply = service.reply(parent.getId(), new CreateAdminReplyRequest("resposta"));
 
-        assertEquals(parent.getId(), reply.getParentComment().getId());
-        assertEquals(CommentTestFixtures.ADMIN_ID, reply.getUserId());
-        verify(repository).save(reply);
+        assertEquals(parent.getId(), reply.commentId());
+        assertEquals(CommentTestFixtures.ADMIN_ID, reply.adminId());
+        var saved = org.mockito.ArgumentCaptor.forClass(Comment.class);
+        verify(repository).save(saved.capture());
+        assertEquals(reply.id(), saved.getValue().getId());
+        assertEquals(parent.getId(), saved.getValue().getParentComment().getId());
     }
 
     @Test

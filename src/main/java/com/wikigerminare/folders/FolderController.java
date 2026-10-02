@@ -1,5 +1,7 @@
 package com.wikigerminare.folders;
 
+import com.wikigerminare.security.AdminOnly;
+
 import com.wikigerminare.folders.dto.CreateFolderRequest;
 import com.wikigerminare.folders.dto.FolderResponse;
 import com.wikigerminare.folders.dto.FolderTreeNodeResponse;
@@ -23,6 +25,7 @@ public class FolderController {
         this.folderService = folderService;
     }
 
+    @AdminOnly
     @PostMapping
     public ResponseEntity<FolderResponse> create(
             @Valid @RequestBody CreateFolderRequest request,
@@ -51,6 +54,7 @@ public class FolderController {
         return ResponseEntity.ok(folderService.list());
     }
 
+    @AdminOnly
     @PatchMapping("/{id}")
     public ResponseEntity<FolderResponse> update(
             @PathVariable UUID id,
@@ -59,6 +63,7 @@ public class FolderController {
                 folderService.update(id, request));
     }
 
+    @AdminOnly
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID id) {

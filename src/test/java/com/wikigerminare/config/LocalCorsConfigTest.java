@@ -1,5 +1,7 @@
 package com.wikigerminare.config;
 
+import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -28,6 +30,19 @@ class LocalCorsConfigTest {
 				.header("Access-Control-Request-Method", "GET"))
 			.andExpect(status().isOk())
 			.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"));
+	}
+
+	@Test
+	void allowsTheEditorsConditionalSaveAndExposesTheEtag() throws Exception {
+		mockMvc.perform(options("/ping")
+				.header("Origin", "http://localhost:3000")
+				.header("Access-Control-Request-Method", "PATCH")
+				.header("Access-Control-Request-Headers", "authorization,content-type,if-match"))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Access-Control-Allow-Headers", containsStringIgnoringCase("if-match")));
+		mockMvc.perform(get("/ping").header("Origin", "http://localhost:3000"))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Access-Control-Expose-Headers", containsStringIgnoringCase("etag")));
 	}
 
 	@Test

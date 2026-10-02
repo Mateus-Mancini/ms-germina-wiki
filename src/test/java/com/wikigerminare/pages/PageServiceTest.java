@@ -254,6 +254,9 @@ void shouldUpdatePageContentWithValidIfMatch() {
 
     verify(pageRepository)
             .saveAndFlush(page);
+
+    verify(wikiLinkService)
+            .reconcile(pageId, "Updated **Markdown**.");
 }
 
 @Test
@@ -293,6 +296,9 @@ void shouldUpdatePageTitleWithValidIfMatch() {
     assertEquals(
             userId,
             response.updatedBy());
+
+    verify(wikiLinkService, never())
+            .reconcile(any(), any());
 }
 
 @Test

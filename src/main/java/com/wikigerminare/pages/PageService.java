@@ -208,6 +208,19 @@ public class PageService {
 
             Page savedPage = pageRepository.saveAndFlush(page);
 
+            /*
+             * O conteúdo editado pode ter ganhado ou perdido
+             * WikiLinks; sem isso, links e backlinks ficariam
+             * presos ao conteúdo da criação.
+             */
+            if (request.isContentProvided()) {
+
+                wikiLinkService.reconcile(
+                        savedPage.getId(),
+                        savedPage.getContent()
+                );
+            }
+
             return toResponse(savedPage);
 
         } catch (ObjectOptimisticLockingFailureException exception) {

@@ -1,5 +1,7 @@
 package com.wikigerminare.pages;
 
+import com.wikigerminare.security.AdminOnly;
+
 import com.wikigerminare.pages.dto.CreatePageRequest;
 import com.wikigerminare.pages.dto.PageResponse;
 import com.wikigerminare.pages.dto.UpdatePageRequest;
@@ -22,6 +24,7 @@ public class PageController {
         this.pageService = pageService;
     }
 
+    @AdminOnly
     @PostMapping
     public ResponseEntity<PageResponse> create(
             @Valid @RequestBody CreatePageRequest request,
@@ -76,6 +79,7 @@ public class PageController {
         );
     }
 
+    @AdminOnly
     @PatchMapping("/{id}")
     public ResponseEntity<PageResponse> update(
             @PathVariable UUID id,
@@ -114,6 +118,7 @@ public class PageController {
                 .body(response);
     }
 
+    @AdminOnly
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID id

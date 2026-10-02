@@ -76,7 +76,7 @@ class PagePersistenceIntegrationTest {
 	}
 
 	private static MockHttpServletRequestBuilder as(UUID user, MockHttpServletRequestBuilder request) {
-		return request.with(jwt().jwt(token -> token.subject(user.toString()).claim("role", "member")));
+		return request.with(jwt().jwt(token -> token.subject(user.toString()).claim("role", "admin")).authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN")));
 	}
 
 }

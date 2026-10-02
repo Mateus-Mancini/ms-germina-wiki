@@ -111,6 +111,23 @@ jobs:
           echo "status=unhealthy" >> "$GITHUB_OUTPUT"
           exit 1
 
+      # CORS lives on the Function URL, not on the published version, so a failure here can't be fixed by
+      # rolling the alias back: it fails the release without triggering the rollback step.
+      - name: Verify browser access (CORS)
+        env:
+          ORIGIN: ${{ vars.WEB_APP_ORIGIN }}
+        run: |
+          api_url="$(aws cloudformation describe-stacks --stack-name ms-germina-wiki \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)"
+          # The editor saves with If-Match (not CORS-safelisted, so it needs the preflight) and reads the ETag.
+          allowed="$(curl -s -o /dev/null -D - --max-time 15 -X OPTIONS -H "Origin: $ORIGIN" \
+            -H 'Access-Control-Request-Method: PATCH' -H 'Access-Control-Request-Headers: authorization,content-type,if-match' \
+            "${api_url}api/pages/00000000-0000-0000-0000-000000000000" | tr -d '\r' | grep -i '^access-control-allow-headers:' || true)"
+          exposed="$(curl -s -o /dev/null -D - --max-time 15 -H "Origin: $ORIGIN" "${api_url}health" \
+            | tr -d '\r' | grep -i '^access-control-expose-headers:' || true)"
+          echo "preflight: ${allowed:-<none>}"; echo "exposed: ${exposed:-<none>}"
+          grep -qi 'if-match' <<< "$allowed" && grep -qi 'etag' <<< "$exposed"
+
       # Only for unhealthy deploys; a 429 means the cost guard stopped the API, which new code did not cause.
       - name: Roll back to the previous version
         if: failure() && steps.verify.outputs.status == 'unhealthy'

@@ -96,6 +96,11 @@ Resources:
           AllowHeaders:
             - Authorization
             - Content-Type
+            - If-Match
+          # Browsers hide response headers from scripts unless exposed; the editor needs the page ETag
+          # to save with If-Match (optimistic locking).
+          ExposeHeaders:
+            - ETag
           MaxAge: 86400
       LoggingConfig:
         LogFormat: Text

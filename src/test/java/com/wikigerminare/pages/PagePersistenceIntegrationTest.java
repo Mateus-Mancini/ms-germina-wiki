@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
@@ -47,22 +48,21 @@ class PagePersistenceIntegrationTest {
 				user + "@example.com");
 		jdbc.update("INSERT INTO folders (id, name, created_by) VALUES (?, 'Folder', ?)", folder, user);
 
-		String created = mvc.perform(as(user, post("/api/pages")).contentType(MediaType.APPLICATION_JSON)
+		var created = mvc.perform(as(user, post("/api/pages")).contentType(MediaType.APPLICATION_JSON)
 			.content("{\"title\":\"Trip\",\"slug\":\"trip-" + user + "\",\"content\":\"Hello [[World]]\",\"folderId\":\""
 					+ folder + "\"}"))
 			.andExpect(status().isCreated())
 			.andReturn()
-			.getResponse()
-			.getContentAsString();
-		UUID pageId = UUID.fromString(JsonPath.read(created, "$.id"));
+			.getResponse();
+		UUID pageId = UUID.fromString(JsonPath.read(created.getContentAsString(), "$.id"));
 		assertThat(jdbc.queryForObject("SELECT version FROM pages WHERE id = ?", Integer.class, pageId)).isEqualTo(1);
 
-		String etag = mvc.perform(as(user, get("/api/pages/{id}", pageId)))
-			.andExpect(status().isOk())
-			.andReturn()
-			.getResponse()
-			.getHeader("ETag");
+		// The editor saves a freshly created page with the ETag from the creation response, without a reload.
+		String etag = created.getHeader("ETag");
 		assertThat(etag).isNotBlank();
+		mvc.perform(as(user, get("/api/pages/{id}", pageId)))
+			.andExpect(status().isOk())
+			.andExpect(header().string("ETag", etag));
 
 		mvc.perform(as(user, patch("/api/pages/{id}", pageId)).header("If-Match", etag)
 			.contentType(MediaType.APPLICATION_JSON)

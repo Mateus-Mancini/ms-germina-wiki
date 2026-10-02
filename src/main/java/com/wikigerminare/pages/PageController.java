@@ -51,6 +51,7 @@ public class PageController {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
+                .eTag(pageService.createEtag(response))
                 .body(response);
     }
 

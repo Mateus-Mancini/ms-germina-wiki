@@ -25,7 +25,9 @@ public class LocalCorsConfig implements WebMvcConfigurer {
 		registry.addMapping("/**")
 			.allowedOrigins(allowedOrigins)
 			.allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE")
-			.allowedHeaders("Authorization", "Content-Type")
+			.allowedHeaders("Authorization", "Content-Type", "If-Match")
+			// Same as the Function URL in template.yaml: the editor reads the page ETag to save with If-Match.
+			.exposedHeaders("ETag")
 			.maxAge(86400);
 	}
 

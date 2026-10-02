@@ -45,6 +45,18 @@ public class User {
     protected User() {
     }
 
+    public static User registerMember(UUID id, String name, String email, String passwordHash, Instant createdAt) {
+        User user = new User();
+        user.id = id;
+        user.name = name;
+        user.email = email;
+        user.passwordHash = passwordHash;
+        user.role = UserRole.MEMBER.databaseValue();
+        user.createdAt = createdAt;
+        user.updatedAt = createdAt;
+        return user;
+    }
+
     public UUID getId() {
         return id;
     }
